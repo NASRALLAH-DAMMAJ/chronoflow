@@ -54,3 +54,9 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+@media (max-width: 720px) {
+  .app-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

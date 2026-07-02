@@ -4,7 +4,7 @@ import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
 import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
-import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit } from './design-system/icons'
+import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock } from './design-system/icons'
 
 function minutesToStr(m) {
   const h = Math.floor(m / 60)
@@ -23,16 +23,24 @@ function formatDuration(mins) {
 function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock }) {
   if (blocks.length === 0) {
     return (
-      <p style={{ color: 'var(--clr-text-tertiary)', fontSize: 14, textAlign: 'center', padding: 24 }}>
-        No blocks yet. Add one above.
-      </p>
+      <div style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
+        <div style={{ marginBottom: 12, opacity: 0.4 }}>
+          <IconClock />
+        </div>
+        <p style={{ fontSize: 14, marginBottom: 4 }}>
+          No blocks yet
+        </p>
+        <p style={{ fontSize: 13 }}>
+          Tap <strong>Add</strong> to plan your day
+        </p>
+      </div>
     )
   }
 
   const sorted = [...blocks].sort((a, b) => a.start - b.start)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 400, overflowY: 'auto', paddingRight: 4 }}>
       {sorted.map(block => {
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
@@ -144,7 +152,7 @@ function AppContent() {
         </div>
       </header>
 
-      <div style={{
+      <div className="app-grid" style={{
         display: 'grid',
         gridTemplateColumns: '1fr 360px',
         gap: 'var(--sp-6)',
