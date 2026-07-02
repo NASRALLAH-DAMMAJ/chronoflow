@@ -185,6 +185,7 @@ function AppContent() {
               <div style={{ marginBottom: 16 }}>
                 <BlockForm
                   block={editingBlock}
+                  blocks={blocks}
                   onAddBlock={addBlock}
                   onUpdateBlock={updateBlock}
                   onClose={closeForm}

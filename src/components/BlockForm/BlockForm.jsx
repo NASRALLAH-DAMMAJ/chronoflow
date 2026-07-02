@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '../../design-system/components'
 import { BLOCK_CATEGORIES } from '../../store/constants'
 
@@ -15,12 +15,27 @@ function strToMinutes(s) {
 
 let nextId = 100
 
-export function BlockForm({ block, onAddBlock, onUpdateBlock, onClose }) {
+function findOverlaps(blocks, startMin, endMin, excludeId) {
+  return blocks.filter(b => {
+    if (b.id === excludeId) return false
+    return b.start < endMin && b.end > startMin
+  })
+}
+
+export function BlockForm({ block, blocks = [], onAddBlock, onUpdateBlock, onClose }) {
   const isEditing = !!block
   const [label, setLabel] = useState(block ? block.label : '')
   const [start, setStart] = useState(block ? minutesToStr(block.start) : '09:00')
   const [end, setEnd] = useState(block ? minutesToStr(block.end) : '10:00')
   const [category, setCategory] = useState(block ? block.category : 'work')
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape' && onClose) onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -44,6 +59,10 @@ export function BlockForm({ block, onAddBlock, onUpdateBlock, onClose }) {
 
     if (onClose) onClose()
   }
+
+  const startMin = strToMinutes(start)
+  const endMin = strToMinutes(end) || 1440
+  const overlaps = endMin > startMin ? findOverlaps(blocks, startMin, endMin, block?.id) : []
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -140,9 +159,18 @@ export function BlockForm({ block, onAddBlock, onUpdateBlock, onClose }) {
           ))}
         </select>
       </div>
+      {overlaps.length > 0 && (
+        <div style={{
+          fontSize: 12, color: 'var(--clr-warning, #F59E0B)',
+          backgroundColor: 'color-mix(in srgb, var(--clr-warning, #F59E0B) 10%, transparent)',
+          padding: '6px 10px', borderRadius: 6,
+        }}>
+          Overlaps with: {overlaps.map(b => b.label).join(', ')}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
         {onClose && <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>}
-        <Button variant="primary" type="submit">{isEditing ? 'Update' : 'Add Block'}</Button>
+        <Button variant="primary" type="submit" disabled={!label.trim() || endMin <= startMin}>{isEditing ? 'Update' : 'Add Block'}</Button>
       </div>
     </form>
   )
