@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
-import { blockReducer, initialState } from './reducer'
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react'
+import { blockReducer, initialState, loadCompletedDays, computeStreak } from './reducer'
 import { getTodayStr } from './constants'
 
 const StoreContext = createContext(null)
@@ -25,6 +25,7 @@ export function StoreProvider({ children }) {
     ...initialState,
     dateStr: today,
     blocks: loadBlocks(today),
+    completedDays: loadCompletedDays(),
     loaded: true,
   })
 
@@ -63,12 +64,20 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'SELECT_BLOCK', payload: { id } })
   }, [])
 
+  const completeDay = useCallback((dateStr) => {
+    dispatch({ type: 'COMPLETE_DAY', payload: dateStr })
+  }, [])
+
+  const streak = useMemo(() => computeStreak(state.completedDays), [state.completedDays])
+
   return (
     <StoreContext.Provider value={{
       blocks: state.blocks,
       dateStr: state.dateStr,
       loaded: state.loaded,
       selectedId: state.selectedId,
+      completedDays: state.completedDays,
+      streak,
       goToDate,
       addBlock,
       updateBlock,
@@ -76,6 +85,7 @@ export function StoreProvider({ children }) {
       moveBlock,
       resizeBlock,
       selectBlock,
+      completeDay,
     }}>
       {children}
     </StoreContext.Provider>

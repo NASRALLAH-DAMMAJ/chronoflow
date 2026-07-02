@@ -64,6 +64,16 @@ export function blockReducer(state, action) {
     case 'SELECT_BLOCK': {
       return { ...state, selectedId: action.payload.id }
     }
+    case 'COMPLETE_DAY': {
+      const ds = action.payload
+      if (state.completedDays.includes(ds)) return state
+      const completedDays = [...state.completedDays, ds]
+      saveCompletedDays(completedDays)
+      return { ...state, completedDays }
+    }
+    case 'LOAD_COMPLETED': {
+      return { ...state, completedDays: action.payload }
+    }
     default:
       return state
   }
@@ -74,4 +84,37 @@ export const initialState = {
   dateStr: '',
   loaded: false,
   selectedId: null,
+  completedDays: [],
+}
+
+export function loadCompletedDays() {
+  try {
+    return JSON.parse(localStorage.getItem('cf-completed') || '[]')
+  } catch {
+    return []
+  }
+}
+
+export function saveCompletedDays(days) {
+  try {
+    localStorage.setItem('cf-completed', JSON.stringify(days))
+  } catch {}
+}
+
+export function computeStreak(completedDays) {
+  let streak = 0
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  while (completedDays.includes(formatDate(d))) {
+    streak++
+    d.setDate(d.getDate() - 1)
+  }
+  return streak
+}
+
+function formatDate(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }

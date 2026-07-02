@@ -118,7 +118,7 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
 
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
-  const { blocks, dateStr, selectedId, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock, goToDate } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
 
@@ -248,6 +248,20 @@ function AppContent() {
               onDeleteBlock={deleteBlock}
               onEditBlock={handleEdit}
             />
+
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 13, color: 'var(--clr-text-tertiary)' }}>
+                Streak: <strong>{streak}</strong> {streak === 1 ? 'day' : 'days'}
+              </div>
+              {isToday && !completedDays.includes(dateStr) && (
+                <Button variant="primary" size="sm" onClick={() => completeDay(dateStr)}>
+                  Complete day
+                </Button>
+              )}
+              {completedDays.includes(dateStr) && (
+                <Badge variant="default">Reviewed</Badge>
+              )}
+            </div>
           </Card>
         </div>
       </div>
