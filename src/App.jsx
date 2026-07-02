@@ -4,7 +4,7 @@ import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
 import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
-import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock } from './design-system/icons'
+import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock, IconChevronLeft, IconChevronRight } from './design-system/icons'
 
 function minutesToStr(m) {
   const h = Math.floor(m / 60)
@@ -18,6 +18,17 @@ function formatDuration(mins) {
   if (h === 0) return `${m}m`
   if (m === 0) return `${h}h`
   return `${h}h ${m}m`
+}
+
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  const today = new Date()
+  const isToday = dateStr === getTodayStr()
+  if (isToday) return 'Today'
+  const diff = Math.round((today - d) / 86400000)
+  if (diff === 1) return 'Yesterday'
+  if (diff === -1) return 'Tomorrow'
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock }) {
@@ -107,7 +118,7 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
 
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
-  const { blocks, dateStr, selectedId, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock } = useStore()
+  const { blocks, dateStr, selectedId, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock, goToDate } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
 
@@ -120,6 +131,14 @@ function AppContent() {
     setEditingBlock(null)
   }
 
+  function goToDay(delta) {
+    const d = new Date(dateStr + 'T00:00:00')
+    d.setDate(d.getDate() + delta)
+    goToDate(d)
+  }
+
+  const todayStr = getTodayStr()
+  const isToday = dateStr === todayStr
   const formOpen = showForm || editingBlock
 
   return (
@@ -136,17 +155,46 @@ function AppContent() {
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 'var(--sp-6)',
+        gap: 'var(--sp-3)',
+        flexWrap: 'wrap',
       }}>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <h1 style={{ fontSize: 'var(--fs-headline)', fontWeight: 700, color: 'var(--clr-text)', margin: 0 }}>
             ChronoFlow
           </h1>
-          <p style={{ fontSize: 'var(--fs-small)', color: 'var(--clr-text-secondary)', marginTop: 2 }}>
-            {dateStr}
-          </p>
+          <span style={{ fontSize: 'var(--fs-small)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
+            · {formatDateLabel(dateStr)}
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Button variant="ghost" size="sm" onClick={() => goToDay(-1)} style={{ display: 'flex', padding: '4px 6px' }}>
+            <IconChevronLeft />
+          </Button>
+          <input
+            type="date"
+            value={dateStr}
+            onChange={e => goToDate(new Date(e.target.value + 'T00:00:00'))}
+            style={{
+              fontSize: 13,
+              padding: '4px 8px',
+              fontFamily: 'var(--ff-body)',
+              color: 'var(--clr-text)',
+              backgroundColor: 'var(--clr-surface)',
+              border: '2px solid var(--clr-border)',
+              borderRadius: 6,
+              outline: 'none',
+              maxWidth: 140,
+            }}
+          />
+          <Button variant="ghost" size="sm" onClick={() => goToDay(1)} style={{ display: 'flex', padding: '4px 6px' }}>
+            <IconChevronRight />
+          </Button>
+          {!isToday && (
+            <Button variant="ghost" size="sm" onClick={() => goToDate()}>
+              Today
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
             {isDark ? <><IconSun /> Light</> : <><IconMoon /> Dark</>}
           </Button>
         </div>
