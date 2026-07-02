@@ -116,11 +116,43 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
   )
 }
 
+function Onboarding({ onDismiss }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    }}>
+      <Card padding="var(--sp-6)" style={{ maxWidth: 400, textAlign: 'center' }}>
+        <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 700, marginBottom: 12, color: 'var(--clr-text)' }}>
+          Welcome to ChronoFlow
+        </h2>
+        <p style={{ fontSize: 14, color: 'var(--clr-text-secondary)', lineHeight: 1.6, marginBottom: 8 }}>
+          See where your time actually goes.
+        </p>
+        <ul style={{ fontSize: 13, color: 'var(--clr-text-secondary)', lineHeight: 2, listStyle: 'none', padding: 0, margin: '16px 0' }}>
+          <li>1. Tap <strong>Add</strong> to plan a block of time</li>
+          <li>2. Drag blocks on the dial to move them</li>
+          <li>3. Drag edges to resize</li>
+          <li>4. Complete your day at night</li>
+        </ul>
+        <Button variant="primary" onClick={onDismiss}>Get started</Button>
+      </Card>
+    </div>
+  )
+}
+
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
   const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('cf-onboarded'))
+
+  function dismissOnboarding() {
+    localStorage.setItem('cf-onboarded', '1')
+    setShowOnboarding(false)
+  }
 
   function handleEdit(block) {
     setEditingBlock(block)
@@ -142,14 +174,16 @@ function AppContent() {
   const formOpen = showForm || editingBlock
 
   return (
-    <div style={{
-      maxWidth: 1000,
-      margin: '0 auto',
-      padding: 'var(--sp-6) var(--sp-4)',
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <>
+      {showOnboarding && <Onboarding onDismiss={dismissOnboarding} />}
+      <div style={{
+        maxWidth: 1000,
+        margin: '0 auto',
+        padding: 'var(--sp-6) var(--sp-4)',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
       <header style={{
         display: 'flex',
         alignItems: 'center',
@@ -270,6 +304,7 @@ function AppContent() {
         ChronoFlow · Time Awareness for Well-being · SDG 3
       </footer>
     </div>
+    </>
   )
 }
 
