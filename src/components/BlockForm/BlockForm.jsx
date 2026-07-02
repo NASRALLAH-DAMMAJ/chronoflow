@@ -15,11 +15,12 @@ function strToMinutes(s) {
 
 let nextId = 100
 
-export function BlockForm({ onAddBlock, onClose }) {
-  const [label, setLabel] = useState('')
-  const [start, setStart] = useState('09:00')
-  const [end, setEnd] = useState('10:00')
-  const [category, setCategory] = useState('work')
+export function BlockForm({ block, onAddBlock, onUpdateBlock, onClose }) {
+  const isEditing = !!block
+  const [label, setLabel] = useState(block ? block.label : '')
+  const [start, setStart] = useState(block ? minutesToStr(block.start) : '09:00')
+  const [end, setEnd] = useState(block ? minutesToStr(block.end) : '10:00')
+  const [category, setCategory] = useState(block ? block.category : 'work')
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -28,15 +29,19 @@ export function BlockForm({ onAddBlock, onClose }) {
     const endMin = strToMinutes(end) || 1440
     if (endMin <= startMin) return
 
-    onAddBlock({
-      id: Date.now() + nextId++,
-      start: startMin,
-      end: endMin,
-      label: label.trim(),
-      category,
-      tags: [],
-    })
-    setLabel('')
+    if (isEditing) {
+      onUpdateBlock(block.id, { start: startMin, end: endMin, label: label.trim(), category })
+    } else {
+      onAddBlock({
+        id: Date.now() + nextId++,
+        start: startMin,
+        end: endMin,
+        label: label.trim(),
+        category,
+        tags: [],
+      })
+    }
+
     if (onClose) onClose()
   }
 
@@ -137,7 +142,7 @@ export function BlockForm({ onAddBlock, onClose }) {
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
         {onClose && <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>}
-        <Button variant="primary" type="submit">Add Block</Button>
+        <Button variant="primary" type="submit">{isEditing ? 'Update' : 'Add Block'}</Button>
       </div>
     </form>
   )

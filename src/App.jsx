@@ -4,7 +4,7 @@ import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
 import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
-import { IconPlus, IconSun, IconMoon, IconTrash } from './design-system/icons'
+import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit } from './design-system/icons'
 
 function minutesToStr(m) {
   const h = Math.floor(m / 60)
@@ -20,7 +20,7 @@ function formatDuration(mins) {
   return `${h}h ${m}m`
 }
 
-function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock }) {
+function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock }) {
   if (blocks.length === 0) {
     return (
       <p style={{ color: 'var(--clr-text-tertiary)', fontSize: 14, textAlign: 'center', padding: 24 }}>
@@ -63,6 +63,20 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock }) {
             </div>
             <Badge variant="default">{block.category}</Badge>
             <button
+              onClick={e => { e.stopPropagation(); onEditBlock(block) }}
+              style={{
+                display: 'flex',
+                padding: 4,
+                border: 'none',
+                background: 'none',
+                color: 'var(--clr-text-tertiary)',
+                cursor: 'pointer',
+                borderRadius: 4,
+              }}
+            >
+              <IconEdit />
+            </button>
+            <button
               onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
               style={{
                 display: 'flex',
@@ -85,8 +99,20 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock }) {
 
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
-  const { blocks, dateStr, selectedId, addBlock, deleteBlock, moveBlock, resizeBlock, selectBlock } = useStore()
+  const { blocks, dateStr, selectedId, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock } = useStore()
   const [showForm, setShowForm] = useState(false)
+  const [editingBlock, setEditingBlock] = useState(null)
+
+  function handleEdit(block) {
+    setEditingBlock(block)
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditingBlock(null)
+  }
+
+  const formOpen = showForm || editingBlock
 
   return (
     <div style={{
@@ -142,16 +168,18 @@ function AppContent() {
               <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 600, color: 'var(--clr-text)', margin: 0 }}>
                 Blocks
               </h2>
-              <Button variant="primary" size="sm" onClick={() => setShowForm(!showForm)}>
+              <Button variant="primary" size="sm" onClick={() => { setEditingBlock(null); setShowForm(!showForm) }}>
                 <IconPlus /> Add
               </Button>
             </div>
 
-            {showForm && (
+            {formOpen && (
               <div style={{ marginBottom: 16 }}>
                 <BlockForm
+                  block={editingBlock}
                   onAddBlock={addBlock}
-                  onClose={() => setShowForm(false)}
+                  onUpdateBlock={updateBlock}
+                  onClose={closeForm}
                 />
               </div>
             )}
@@ -161,6 +189,7 @@ function AppContent() {
               selectedId={selectedId}
               onSelectBlock={selectBlock}
               onDeleteBlock={deleteBlock}
+              onEditBlock={handleEdit}
             />
           </Card>
         </div>
