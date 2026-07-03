@@ -2,13 +2,9 @@ import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { drawDial } from './DialCanvas'
 import { useDialInteraction } from './useDialInteraction'
 import { CATEGORY_COLORS } from '../../store/constants'
+import { minutesToStr } from '../../utils'
 
 function getCurrentMinutes() {
-  const now = new Date()
-  return now.getHours() * 60 + now.getMinutes()
-}
-
-function minutesToStr(m) {
   const h = Math.floor(((m % 1440) + 1440) % 1440 / 60)
   const min = ((m % 1440) + 1440) % 1440 % 60
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
@@ -22,6 +18,7 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
   const [containerWidth, setContainerWidth] = useState(0)
   const [placementStart, setPlacementStart] = useState(null)
   const [placementPos, setPlacementPos] = useState(null)
+  const colorsRef = useRef(null)
   const pinchRef = useRef(null)
 
   useEffect(() => {
@@ -41,6 +38,13 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
       setPlacementPos(null)
     }
   }, [placement])
+
+  useEffect(() => {
+    const root = document.documentElement
+    const observer = new MutationObserver(() => { colorsRef.current = null })
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
 
   const blocksWithColor = useMemo(() =>
     blocks.map(b => ({ ...b, color: CATEGORY_COLORS[b.category] || CATEGORY_COLORS.other })),
@@ -79,19 +83,21 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     const cy = dialSize / 2
     const radius = dialSize / 2 - 20
 
-    const root = document.documentElement
-    const style = getComputedStyle(root)
-    const colors = {
-      bg: style.getPropertyValue('--clr-bg').trim() || '#FAFAFA',
-      border: style.getPropertyValue('--clr-border').trim() || '#E4E4E7',
-      text: style.getPropertyValue('--clr-text').trim() || '#18181B',
-      textSecondary: style.getPropertyValue('--clr-text-secondary').trim() || '#71717A',
-      primary: style.getPropertyValue('--clr-primary').trim() || '#3B82F6',
-      surface: style.getPropertyValue('--clr-surface').trim() || '#FFFFFF',
-      accent: style.getPropertyValue('--clr-primary-light').trim() || '#DBEAFE',
+    if (!colorsRef.current) {
+      const root = document.documentElement
+      const style = getComputedStyle(root)
+      colorsRef.current = {
+        bg: style.getPropertyValue('--clr-bg').trim() || '#FAFAFA',
+        border: style.getPropertyValue('--clr-border').trim() || '#E4E4E7',
+        text: style.getPropertyValue('--clr-text').trim() || '#18181B',
+        textSecondary: style.getPropertyValue('--clr-text-secondary').trim() || '#71717A',
+        primary: style.getPropertyValue('--clr-primary').trim() || '#3B82F6',
+        surface: style.getPropertyValue('--clr-surface').trim() || '#FFFFFF',
+        accent: style.getPropertyValue('--clr-primary-light').trim() || '#DBEAFE',
+      }
     }
 
-    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colors, zoomRange, placement, placementPos, placementStart)
+    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart)
   }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart])
 
   const handleWheel = useCallback((e) => {

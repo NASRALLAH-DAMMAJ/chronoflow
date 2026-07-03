@@ -57,7 +57,6 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
             backgroundColor: 'var(--clr-surface)',
             border: '2px solid var(--clr-border)',
             borderRadius: 6,
-            outline: 'none',
             boxSizing: 'border-box',
           }}
           autoFocus
@@ -92,7 +91,6 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
             backgroundColor: 'var(--clr-surface)',
             border: '2px solid var(--clr-border)',
             borderRadius: 6,
-            outline: 'none',
           }}
         >
           {BLOCK_CATEGORIES.map(c => (

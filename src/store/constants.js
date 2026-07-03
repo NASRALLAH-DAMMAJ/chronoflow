@@ -17,14 +17,14 @@ export const BLOCK_CATEGORIES = [
 ]
 
 export const CATEGORY_COLORS = {
-  work:      '#3B82F6',
-  sleep:     '#8B5CF6',
-  exercise:  '#22C55E',
-  meal:      '#F59E0B',
-  leisure:   '#EC4899',
-  family:    '#14B8A6',
-  commute:   '#F97316',
-  chores:    '#A1A1AA',
-  'self-care': '#06B6D4',
-  other:     '#78716C',
+  work:      '#60A5FA',
+  sleep:     '#A78BFA',
+  exercise:  '#4ADE80',
+  meal:      '#FBBF24',
+  leisure:   '#F472B6',
+  family:    '#2DD4BF',
+  commute:   '#FB923C',
+  chores:    '#D4D4D8',
+  'self-care': '#22D3EE',
+  other:     '#A8A29E',
 }

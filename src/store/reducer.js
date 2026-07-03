@@ -1,4 +1,5 @@
 import { SNAP_MINUTES } from './constants'
+import { formatDate } from '../utils'
 
 function snapToGrid(minutes) {
   const snap = SNAP_MINUTES
@@ -124,11 +125,4 @@ export function computeStreak(completedDays) {
     d.setDate(d.getDate() - 1)
   }
   return streak
-}
-
-function formatDate(date) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
 }

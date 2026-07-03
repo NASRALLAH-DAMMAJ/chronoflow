@@ -1,11 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
+import { snapToGrid } from '../../utils'
 
-const SNAP = 15
 const MINUTES_IN_DAY = 1440
-
-function snap(minutes) {
-  return Math.round(minutes / SNAP) * SNAP
-}
 
 function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val))
@@ -33,7 +29,7 @@ export function TimeBar({ duration, onChange }) {
     const { x: startX, duration: origDur, rectWidth } = dragStartRef.current
     const dx = e.clientX - startX
     const dMinutes = Math.round((dx / rectWidth) * MINUTES_IN_DAY)
-    const snapped = snap(dMinutes)
+    const snapped = snapToGrid(dMinutes)
     const newDur = clamp(origDur + snapped, SNAP, MINUTES_IN_DAY)
     onChange(newDur)
   }, [dragging, onChange])
@@ -112,7 +108,7 @@ export function TimeBar({ duration, onChange }) {
           transform: 'translateY(-50%)',
           width: 12,
           height: 24,
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--clr-surface-elevated)',
           border: '2px solid var(--clr-primary)',
           borderRadius: 6,
           cursor: 'ew-resize',

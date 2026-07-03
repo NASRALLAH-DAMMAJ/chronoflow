@@ -1,15 +1,48 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { IconX } from '../icons'
 
 export function Modal({ isOpen, onClose, title, children, width = '480px' }) {
   const overlayRef = useRef(null)
+  const contentRef = useRef(null)
+  const previousFocusRef = useRef(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement
+      const timer = setTimeout(() => {
+        const firstFocusable = contentRef.current?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        if (firstFocusable) firstFocusable.focus()
+      }, 50)
+      return () => clearTimeout(timer)
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus()
+    }
+  }, [isOpen])
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      onClose()
+      return
+    }
+    if (e.key !== 'Tab') return
+    const focusable = contentRef.current?.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    if (!focusable || focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }, [onClose])
 
   useEffect(() => {
     if (!isOpen) return
-    const handler = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [isOpen, onClose])
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, handleKeyDown])
 
   if (!isOpen) return null
 
@@ -80,7 +113,7 @@ export function Modal({ isOpen, onClose, title, children, width = '480px' }) {
             <IconX />
           </button>
         </div>
-        <div style={{ padding: 'var(--sp-4) var(--sp-5)' }}>
+        <div ref={contentRef} style={{ padding: 'var(--sp-4) var(--sp-5)' }}>
           {children}
         </div>
       </div>

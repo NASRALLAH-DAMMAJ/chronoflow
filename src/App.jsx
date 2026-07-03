@@ -5,20 +5,7 @@ import { BlockForm } from './components/BlockForm'
 import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
 import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock, IconChevronLeft, IconChevronRight } from './design-system/icons'
-
-function minutesToStr(m) {
-  const h = Math.floor(m / 60)
-  const min = m % 60
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
-}
-
-function formatDuration(mins) {
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
-}
+import { minutesToStr, formatDuration } from './utils'
 
 function formatDateLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -56,10 +43,14 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
         return (
-          <div
-            key={block.id}
-            onClick={() => onSelectBlock(block.id)}
-            style={{
+            <div
+              key={block.id}
+              onClick={() => onSelectBlock(block.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectBlock(block.id) } }}
+              tabIndex={0}
+              role="button"
+              aria-pressed={isSelected}
+              style={{
               display: 'flex',
               alignItems: 'center',
               gap: 10,
@@ -123,7 +114,7 @@ function Onboarding({ onDismiss }) {
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: 'var(--clr-overlay)',
     }}>
       <Card padding="var(--sp-6)" style={{ maxWidth: 400, textAlign: 'center' }}>
         <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 700, marginBottom: 12, color: 'var(--clr-text)' }}>
@@ -244,7 +235,6 @@ function AppContent() {
               backgroundColor: 'var(--clr-surface)',
               border: '2px solid var(--clr-border)',
               borderRadius: 6,
-              outline: 'none',
               maxWidth: 140,
             }}
           />
