@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS } from './store'
 import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
@@ -6,6 +7,9 @@ import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
 import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock, IconChevronLeft, IconChevronRight } from './design-system/icons'
 import { minutesToStr, formatDuration } from './utils'
+import { useSupabase } from './lib/SupabaseContext'
+import LoginPage from './pages/LoginPage'
+import ProtectedRoute from './pages/ProtectedRoute'
 
 function formatDateLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -137,6 +141,7 @@ function Onboarding({ onDismiss }) {
 
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
+  const { supabase } = useSupabase()
   const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
@@ -249,6 +254,9 @@ function AppContent() {
           <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
             {isDark ? <><IconSun /> Light</> : <><IconMoon /> Dark</>}
           </Button>
+          <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()} style={{ fontSize: 12 }}>
+            Sign out
+          </Button>
         </div>
       </header>
 
@@ -345,8 +353,15 @@ function AppContent() {
 
 export default function App() {
   return (
-    <StoreProvider>
-      <AppContent />
-    </StoreProvider>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <StoreProvider>
+            <AppContent />
+          </StoreProvider>
+        </ProtectedRoute>
+      } />
+    </Routes>
   )
 }

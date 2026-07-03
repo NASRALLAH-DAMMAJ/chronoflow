@@ -1,0 +1,37 @@
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from './supabase'
+
+const SupabaseContext = createContext(null)
+
+export function SupabaseProvider({ children }) {
+  const [session, setSession] = useState(null)
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  return (
+    <SupabaseContext.Provider value={{ supabase, session, user, loading }}>
+      {children}
+    </SupabaseContext.Provider>
+  )
+}
+
+export function useSupabase() {
+  const ctx = useContext(SupabaseContext)
+  if (!ctx) throw new Error('useSupabase must be used within SupabaseProvider')
+  return ctx
+}
