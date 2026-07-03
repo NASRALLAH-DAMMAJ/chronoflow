@@ -23,17 +23,20 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     if (!user || initFetched.current) return
     initFetched.current = true
-    const load = async () => {
+    ;(async () => {
       try {
         const blocks = await fetchSchedule(supabase, today)
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch {
-        const blocks = await fetchBlocks(supabase, today)
-        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+        try {
+          const blocks = await fetchBlocks(supabase, today)
+          dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+        } catch {
+          dispatch({ type: 'LOAD_BLOCKS', payload: [] })
+        }
       }
       dispatch({ type: 'SET_LOADING', payload: false })
-    }
-    load()
+    })()
   }, [user, supabase, today])
 
   useEffect(() => {
@@ -48,17 +51,20 @@ export function StoreProvider({ children }) {
     const ds = getTodayStr(date)
     dispatch({ type: 'SET_DATE', payload: ds })
     dispatch({ type: 'SET_LOADING', payload: true })
-    const load = async () => {
+    ;(async () => {
       try {
         const blocks = await fetchSchedule(supabase, ds)
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch {
-        const blocks = await fetchBlocks(supabase, ds)
-        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+        try {
+          const blocks = await fetchBlocks(supabase, ds)
+          dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+        } catch {
+          dispatch({ type: 'LOAD_BLOCKS', payload: [] })
+        }
       }
       dispatch({ type: 'SET_LOADING', payload: false })
-    }
-    load()
+    })()
   }, [supabase])
 
   const addBlock = useCallback((block) => {
