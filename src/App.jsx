@@ -77,7 +77,7 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
                 {block.label}
               </div>
               <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)' }}>
-                {minutesToStr(block.start)} – {minutesToStr(block.end)} · {formatDuration(block.end - block.start)}
+                {minutesToStr(block.start)} – {minutesToStr(block.end)} · {formatDuration(block.end <= block.start ? block.end + 1440 - block.start : block.end - block.start)}
               </div>
             </div>
             <Badge variant="default">{block.category}</Badge>
@@ -132,8 +132,8 @@ function Onboarding({ onDismiss }) {
         </p>
         <ul style={{ fontSize: 13, color: 'var(--clr-text-secondary)', lineHeight: 2, listStyle: 'none', padding: 0, margin: '16px 0' }}>
           <li>1. Tap <strong>Add</strong> to plan a block of time</li>
-          <li>2. Drag blocks on the dial to move them</li>
-          <li>3. Drag edges to resize</li>
+          <li>2. Drag on the dial to set start and end</li>
+          <li>3. Drag blocks to move, drag edges to resize</li>
           <li>4. Complete your day at night</li>
         </ul>
         <Button variant="primary" onClick={onDismiss}>Get started</Button>
@@ -146,7 +146,7 @@ let nextBlockId = 100
 
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
-  const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
   const [placement, setPlacement] = useState(null)
@@ -159,6 +159,8 @@ function AppContent() {
 
   function handleEdit(block) {
     setEditingBlock(block)
+    setShowForm(false)
+    setPlacement(null)
   }
 
   function closeForm() {
@@ -168,14 +170,16 @@ function AppContent() {
 
   function handlePlaceBlock(label, category) {
     setPlacement({ label, category })
+    setShowForm(false)
   }
 
-  function handlePlaceOnDial(minute) {
-    const snapped = Math.round(minute / 15) * 15
+  function handlePlaceOnDial(startMin, endMin) {
+    const snappedStart = Math.round(startMin / 15) * 15
+    const snappedEnd = Math.max(snappedStart + 15, Math.round(endMin / 15) * 15)
     addBlock({
       id: Date.now() + nextBlockId++,
-      start: snapped,
-      end: Math.min(snapped + 60, 1440),
+      start: snappedStart,
+      end: Math.min(snappedEnd, 1440),
       label: placement.label,
       category: placement.category,
       tags: [],
@@ -188,7 +192,6 @@ function AppContent() {
   }
 
   function goToDay(delta) {
-    setPlacement(null)
     const d = new Date(dateStr + 'T00:00:00')
     d.setDate(d.getDate() + delta)
     goToDate(d)
@@ -225,14 +228,14 @@ function AppContent() {
             · {formatDateLabel(dateStr)}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <Button variant="ghost" size="sm" onClick={() => goToDay(-1)} style={{ display: 'flex', padding: '4px 6px' }}>
             <IconChevronLeft />
           </Button>
           <input
             type="date"
             value={dateStr}
-            onChange={e => { setPlacement(null); goToDate(new Date(e.target.value + 'T00:00:00')) }}
+            onChange={e => goToDate(new Date(e.target.value + 'T00:00:00'))}
             style={{
               fontSize: 13,
               padding: '4px 8px',
@@ -249,7 +252,7 @@ function AppContent() {
             <IconChevronRight />
           </Button>
           {!isToday && (
-            <Button variant="ghost" size="sm" onClick={() => { setPlacement(null); goToDate() }}>
+            <Button variant="ghost" size="sm" onClick={() => goToDate()}>
               Today
             </Button>
           )}
@@ -261,7 +264,7 @@ function AppContent() {
 
       <div className="app-grid" style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 360px',
+        gridTemplateColumns: '1fr 340px',
         gap: 'var(--sp-6)',
         alignItems: 'start',
         flex: 1,
@@ -275,7 +278,7 @@ function AppContent() {
               border: '1px solid var(--clr-border)',
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
-              Tap the dial to place <strong>{placement.label}</strong>
+              Drag on dial to place <strong>{placement.label}</strong>
               <button onClick={cancelPlacement} style={{
                 border: 'none', background: 'none',
                 color: 'var(--clr-text-tertiary)', cursor: 'pointer', fontSize: 14, padding: 0,
@@ -288,9 +291,9 @@ function AppContent() {
             placement={placement}
             onMoveBlock={moveBlock}
             onResizeBlock={resizeBlock}
+            onResizeBlockStart={resizeBlockStart}
             onSelectBlock={selectBlock}
             onPlaceBlock={handlePlaceOnDial}
-            onCancelPlacement={cancelPlacement}
             size={380}
           />
         </div>
@@ -301,7 +304,7 @@ function AppContent() {
               <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 600, color: 'var(--clr-text)', margin: 0 }}>
                 Blocks
               </h2>
-              <Button variant="primary" size="sm" onClick={() => { setPlacement(null); setEditingBlock(null); setShowForm(!showForm) }}>
+              <Button variant="primary" size="sm" onClick={() => { setEditingBlock(null); setShowForm(!showForm); setPlacement(null) }}>
                 <IconPlus /> Add
               </Button>
             </div>
@@ -310,7 +313,6 @@ function AppContent() {
               <div style={{ marginBottom: 16 }}>
                 <BlockForm
                   block={editingBlock}
-                  onAddBlock={addBlock}
                   onUpdateBlock={updateBlock}
                   onPlaceBlock={handlePlaceBlock}
                   onClose={closeForm}
