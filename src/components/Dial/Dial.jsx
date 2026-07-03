@@ -214,8 +214,9 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectB
         ref={canvasRef}
         style={{
           width: size,
-          height: size,
+          aspectRatio: 1,
           maxWidth: '100%',
+          height: 'auto',
           borderRadius: '50%',
           cursor: placement ? 'crosshair' : ghost ? 'grabbing' : 'grab',
           touchAction: 'none',

@@ -108,19 +108,16 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
 
     let g = null
     if (edge === 'body') {
-      let newStart = snapped - offset
-      if (newStart < 0) newStart = 0
-      if (newStart > 1440) newStart = 1440
       const duration = block.end - block.start
-      let newEnd = newStart + duration
-      if (newEnd > 1440) { newEnd = 1440; newStart = 1440 - duration }
-      g = { ...block, start: newStart, end: newEnd }
+      let newStart = snapped - offset
+      newStart = Math.max(0, Math.min(1440 - duration, newStart))
+      g = { ...block, start: Math.round(newStart), end: Math.round(newStart + duration) }
     } else if (edge === 'end') {
       const newEnd = snapped > block.start ? snapped : block.start + SNAP_MINUTES
-      g = { ...block, end: newEnd }
+      g = { ...block, end: Math.round(newEnd) }
     } else if (edge === 'start') {
       const newStart = snapped < block.end ? snapped : block.end - SNAP_MINUTES
-      g = { ...block, start: newStart }
+      g = { ...block, start: Math.round(newStart) }
     }
 
     ghostRef.current = g
