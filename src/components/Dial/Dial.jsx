@@ -270,6 +270,8 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     <div ref={wrapperRef} style={{ position: 'relative', width: '100%', maxWidth: size, margin: '0 auto' }}>
       <canvas
         ref={canvasRef}
+        role="img"
+        aria-label="24-hour time dial. Use pointer to select and drag time blocks."
         style={{
           width: '100%',
           maxWidth: '100%',

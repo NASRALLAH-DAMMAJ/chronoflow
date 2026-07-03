@@ -83,6 +83,7 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
             <Badge variant="default">{block.category}</Badge>
             <button
               onClick={e => { e.stopPropagation(); onEditBlock(block) }}
+              aria-label={`Edit ${block.label}`}
               style={{
                 display: 'flex',
                 padding: 4,
@@ -97,6 +98,7 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
             </button>
             <button
               onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
+              aria-label={`Delete ${block.label}`}
               style={{
                 display: 'flex',
                 padding: 4,
@@ -142,8 +144,6 @@ function Onboarding({ onDismiss }) {
   )
 }
 
-let nextBlockId = 100
-
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
   const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
@@ -177,7 +177,7 @@ function AppContent() {
     const snappedStart = Math.round(startMin / 15) * 15
     const snappedEnd = Math.max(snappedStart + 15, Math.round(endMin / 15) * 15)
     addBlock({
-      id: Date.now() + nextBlockId++,
+      id: crypto.randomUUID(),
       start: snappedStart,
       end: Math.min(snappedEnd, 1440),
       label: placement.label,
@@ -229,7 +229,7 @@ function AppContent() {
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <Button variant="ghost" size="sm" onClick={() => goToDay(-1)} style={{ display: 'flex', padding: '4px 6px' }}>
+          <Button variant="ghost" size="sm" onClick={() => goToDay(-1)} aria-label="Previous day" style={{ display: 'flex', padding: '4px 6px' }}>
             <IconChevronLeft />
           </Button>
           <input
@@ -248,7 +248,7 @@ function AppContent() {
               maxWidth: 140,
             }}
           />
-          <Button variant="ghost" size="sm" onClick={() => goToDay(1)} style={{ display: 'flex', padding: '4px 6px' }}>
+          <Button variant="ghost" size="sm" onClick={() => goToDay(1)} aria-label="Next day" style={{ display: 'flex', padding: '4px 6px' }}>
             <IconChevronRight />
           </Button>
           {!isToday && (
@@ -279,7 +279,7 @@ function AppContent() {
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
               Drag on dial to place <strong>{placement.label}</strong>
-              <button onClick={cancelPlacement} style={{
+              <button onClick={cancelPlacement} aria-label="Cancel placement" style={{
                 border: 'none', background: 'none',
                 color: 'var(--clr-text-tertiary)', cursor: 'pointer', fontSize: 14, padding: 0,
               }}>✕</button>

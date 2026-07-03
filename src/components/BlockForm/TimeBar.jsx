@@ -72,6 +72,13 @@ export function TimeBar({ duration, onChange }) {
       <div
         ref={trackRef}
         onPointerDown={handlePointerDown}
+        role="slider"
+        aria-label="Block duration"
+        aria-valuemin={15}
+        aria-valuemax={1440}
+        aria-valuenow={dur}
+        aria-valuetext={durationStr}
+        tabIndex={0}
         onTouchStart={(e) => {
           const touch = e.touches[0]
           handlePointerDown({ clientX: touch.clientX, preventDefault: () => e.preventDefault(), stopPropagation: () => e.stopPropagation() })

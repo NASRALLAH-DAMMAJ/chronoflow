@@ -234,10 +234,10 @@ function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, text, t
     ctx.font = '12px Inter, sans-serif'
     ctx.fillText(remaining + 'm left ' + pct + '%', cx, cy + 28)
 
-    var barW = centerR * 1.2
-    var barH = 4
-    var barX = cx - barW / 2
-    var barY = cy + 45
+    const barW = centerR * 1.2
+    const barH = 4
+    const barX = cx - barW / 2
+    const barY = cy + 45
 
     ctx.fillStyle = 'rgba(0,0,0,0.1)'
     ctx.fillRect(barX, barY, barW, barH)
@@ -246,8 +246,8 @@ function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, text, t
       ctx.fillRect(barX, barY, barW * (pct / 100), barH)
     }
   } else {
-    var slotH = 20
-    var startY = cy - (runningBlocks.length * slotH) / 2 + slotH / 2
+    const slotH = 20
+    const startY = cy - (runningBlocks.length * slotH) / 2 + slotH / 2
 
     ctx.fillStyle = primary
     ctx.font = 'bold 14px Inter, sans-serif'
@@ -257,20 +257,20 @@ function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, text, t
     ctx.fillStyle = textSecondary
     ctx.fillText(runningBlocks.length + ' tasks running', cx, cy - runningBlocks.length * slotH / 2 - 2)
 
-    for (var i = 0; i < runningBlocks.length; i++) {
-      var b = runningBlocks[i]
-      var y = startY + i * slotH
+    for (let i = 0; i < runningBlocks.length; i++) {
+      const b = runningBlocks[i]
+      const y = startY + i * slotH
 
-      var elapsed = now >= b.start ? now - b.start : 1440 - b.start + now
-      var total = b.end <= b.start ? b.end + 1440 - b.start : b.end - b.start
-      var remaining = Math.max(0, total - elapsed)
+      const elapsed = now >= b.start ? now - b.start : 1440 - b.start + now
+      const total = b.end <= b.start ? b.end + 1440 - b.start : b.end - b.start
+      const remaining = Math.max(0, total - elapsed)
 
       ctx.fillStyle = b.color || '#3B82F6'
       ctx.beginPath()
       ctx.arc(cx - centerR + 16, y, 4, 0, TAU)
       ctx.fill()
 
-      var label = b.label.length > 10 ? b.label.slice(0, 9) + '…' : b.label
+      const label = b.label.length > 10 ? b.label.slice(0, 9) + '…' : b.label
       ctx.fillStyle = text
       ctx.font = '11px Inter, sans-serif'
       ctx.textAlign = 'left'
@@ -289,10 +289,10 @@ function drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart,
   const pColor = CATEGORY_COLORS[placement.category] || CATEGORY_COLORS.work
 
   if (placementStart != null) {
-    var rmStart = toRenderMinute(placementStart, zoomRange)
-    var rmEnd = toRenderMinute(placementPos, zoomRange)
-    var startAngle = renderMinuteToRadians(rmStart)
-    var endAngle = renderMinuteToRadians(rmEnd)
+    const rmStart = toRenderMinute(placementStart, zoomRange)
+    const rmEnd = toRenderMinute(placementPos, zoomRange)
+    const startAngle = renderMinuteToRadians(rmStart)
+    const endAngle = renderMinuteToRadians(rmEnd)
 
     ctx.save()
     ctx.beginPath()
@@ -308,10 +308,10 @@ function drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart,
     ctx.globalAlpha = 0.8
     ctx.stroke()
 
-    var midAngle = (startAngle + endAngle) / 2
-    var midR = innerR + arcWidth / 2
-    var mx = cx + Math.cos(midAngle) * midR
-    var my = cy + Math.sin(midAngle) * midR
+    const midAngle = (startAngle + endAngle) / 2
+    const midR = innerR + arcWidth / 2
+    const mx = cx + Math.cos(midAngle) * midR
+    const my = cy + Math.sin(midAngle) * midR
     ctx.setLineDash([])
     ctx.translate(mx, my)
     ctx.rotate(midAngle + PI / 2)
@@ -319,14 +319,14 @@ function drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart,
     ctx.font = 'bold 11px Inter, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    var duration = Math.round(Math.abs(rmEnd - rmStart))
-    var h = Math.floor(duration / 60)
-    var m = duration % 60
+    const duration = Math.round(Math.abs(rmEnd - rmStart))
+    const h = Math.floor(duration / 60)
+    const m = duration % 60
     ctx.fillText(h > 0 ? h + 'h ' + m + 'm' : m + 'm', 0, 0)
     ctx.restore()
   } else {
-    var rm = toRenderMinute(placementPos, zoomRange)
-    var angle = renderMinuteToRadians(rm)
+    const rm = toRenderMinute(placementPos, zoomRange)
+    const angle = renderMinuteToRadians(rm)
 
     ctx.save()
     ctx.beginPath()
@@ -347,9 +347,9 @@ function drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart,
 }
 
 function findRunningBlocks(blocks, now) {
-  var result = []
-  for (var i = 0; i < blocks.length; i++) {
-    var block = blocks[i]
+  const result = []
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i]
     if (block.end > block.start) {
       if (now >= block.start && now < block.end) result.push(block)
     } else {

@@ -83,7 +83,6 @@ export function blockReducer(state, action) {
       const ds = action.payload
       if (state.completedDays.includes(ds)) return state
       const completedDays = [...state.completedDays, ds]
-      saveCompletedDays(completedDays)
       return { ...state, completedDays }
     }
     case 'LOAD_COMPLETED': {

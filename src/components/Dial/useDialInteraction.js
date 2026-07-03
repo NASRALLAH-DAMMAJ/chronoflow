@@ -17,7 +17,7 @@ function angleDiff(a1, a2) {
   return Math.abs(d)
 }
 
-export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, zoomRange, snapEnabled = true, disabled = false }) {
+export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, zoomRange, disabled = false }) {
   const dragRef = useRef(null)
   const ghostRef = useRef(null)
   const [tick, setTick] = useState(0)
@@ -94,7 +94,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     const cx = rect.width / 2
     const cy = rect.height / 2
     const radius = Math.min(cx, cy) - 20
-    const innerR = radius * 0.6
+    const innerR = radius * 0.55
     const outerR = radius
 
     const hit = getBlockHit(x, y, cx, cy, innerR, outerR)
@@ -136,7 +136,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     else if (wm - continuousWm > 720) cw = wm - 1440
     df.continuousWm = cw
 
-    const snapped = snapEnabled ? snap(cw) : cw
+    const snapped = snap(cw)
 
     let g = null
     if (edge === 'body') {
@@ -163,7 +163,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
 
     ghostRef.current = g
     setTick(t => t + 1)
-  }, [snapEnabled, zoomRange])
+  }, [zoomRange])
 
   const handlePointerUp = useCallback(() => {
     const df = dragRef.current
