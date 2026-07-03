@@ -3,6 +3,7 @@
 > **Build**: React 18 + Vite 6 + Canvas 2D + localStorage (MVP) → Supabase + Vercel (Phase 1) → Native Kotlin + SQLite (Phase 2)
 > **Principles**: Simplicity > Features | Awareness > Productivity | History is the Product
 > **Current version**: v0.1.0-alpha (released)
+> **Issue tracker**: See [ISSUES.md](./ISSUES.md) for all open GitHub issues and their status.
 
 ---
 
@@ -21,6 +22,7 @@
 | Responsive layout | Done |
 | Static server | Done |
 | Unit tests | Not started |
+| GitHub issues cleanup (20 issues) | Not started |
 | Supabase backend + auth | Not started |
 | Recurring tasks | Not started |
 | Sleep schedule | Not started |
@@ -62,6 +64,33 @@
 | 0.3.6 | Interaction tests: zoom scroll, pinch, pan, reset | Manual |
 | 0.3.7 | Visual test: theme toggle -> dial redraws correctly | Manual |
 | 0.3.8 | Manual QA checklist (see Testing section below) | Manual |
+
+### Milestone 0.4: GitHub issues cleanup
+
+> See [ISSUES.md](./ISSUES.md) for full issue list with file references and work order.
+
+| # | Task | Issue |
+|---|------|-------|
+| 0.4.1 | Fix innerR mismatch (hit detection 0.6 vs render 0.55) | [#1](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/1) |
+| 0.4.2 | Move side effect out of reducer (COMPLETE_DAY) | [#2](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/2) |
+| 0.4.3 | Fix block ID collision risk (use crypto.randomUUID) | [#3](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/3) |
+| 0.4.4 | Add focus indicators + keyboard support to inputs | [#4](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/4) |
+| 0.4.5 | Add aria-label to all icon-only buttons | [#5](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/5) |
+| 0.4.6 | Add focus trap to Modal and Onboarding | [#6](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/6) |
+| 0.4.7 | Add ARIA role/label to canvas | [#7](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/7) |
+| 0.4.8 | Add ARIA slider attributes to TimeBar | [#8](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/8) |
+| 0.4.9 | Fix theme inconsistencies (overlay, TimeBar handle) | [#9](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/9) |
+| 0.4.10 | Replace var with const/let in DialCanvas.js | [#10](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/10) |
+| 0.4.11 | Extract duplicate utilities to shared modules | [#11](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/11) |
+| 0.4.12 | Remove dead files and unused exports | [#12](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/12) |
+| 0.4.13 | Memoize Context value in StoreContext | [#13](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/13) |
+| 0.4.14 | Remove unused CSS custom properties | [#14](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/14) |
+| 0.4.15 | Remove dead snapEnabled prop | [#15](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/15) |
+| 0.4.16 | Fix category color contrast on dark backgrounds | [#16](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/16) |
+| 0.4.17 | Add vitest + test suite | [#17](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/17) |
+| 0.4.18 | Add ESLint, Prettier, editorconfig | [#18](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/18) |
+| 0.4.19 | Add missing responsive styles for mobile | [#19](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/19) |
+| 0.4.20 | Cache getComputedStyle on canvas draw | [#20](https://github.com/NASRALLAH-DAMMAJ/chronoflow/issues/20) |
 
 ---
 
@@ -237,6 +266,7 @@
 | 0.1 Zoom overhaul | 0 | 6 | ~2h | Done |
 | 0.2 Theme fix | 0 | 1 | ~10m | Done |
 | 0.3 Test suite | 0 | 8 | ~3h | Not started |
+| 0.4 GitHub issues cleanup | 0 | 20 | ~4h | Not started |
 | 1.0 Setup | 1 | 4 | ~1.5h | Not started |
 | 1.1 Auth + Routing | 1 | 5 | ~1h | Not started |
 | 1.2 Supabase migration | 1 | 4 | ~1.5h | Not started |
