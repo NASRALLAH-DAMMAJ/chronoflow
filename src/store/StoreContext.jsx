@@ -1,44 +1,54 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef } from 'react'
 import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, computeStreak } from './reducer'
 import { getTodayStr } from './constants'
+import { useSupabase } from '../lib/SupabaseContext'
+import { fetchBlocks, upsertBlocks, deleteBlock } from '../lib/blocks'
 
 const StoreContext = createContext(null)
 
-function loadBlocks(dateStr) {
-  try {
-    const raw = localStorage.getItem(`cf-blocks-${dateStr}`)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function saveBlocks(dateStr, blocks) {
-  try {
-    localStorage.setItem(`cf-blocks-${dateStr}`, JSON.stringify(blocks))
-  } catch { /* quota exceeded - handle gracefully */ }
-}
-
 export function StoreProvider({ children }) {
+  const { supabase, user } = useSupabase()
   const today = getTodayStr()
   const [state, dispatch] = useReducer(blockReducer, {
     ...initialState,
     dateStr: today,
-    blocks: loadBlocks(today),
+    blocks: [],
     completedDays: loadCompletedDays(),
-    loaded: true,
+    loaded: false,
+    loading: true,
   })
+  const initFetched = useRef(false)
 
   useEffect(() => {
-    saveBlocks(state.dateStr, state.blocks)
-  }, [state.dateStr, state.blocks])
+    if (!user || initFetched.current) return
+    initFetched.current = true
+    fetchBlocks(supabase, today).then(blocks => {
+      dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+      dispatch({ type: 'SET_LOADING', payload: false })
+    }).catch(() => {
+      dispatch({ type: 'SET_LOADING', payload: false })
+    })
+  }, [user, supabase, today])
+
+  useEffect(() => {
+    if (!state.loaded || !user) return
+    const timer = setTimeout(() => {
+      upsertBlocks(supabase, state.dateStr, state.blocks).catch(console.error)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [state.dateStr, state.blocks, state.loaded, user, supabase])
 
   const goToDate = useCallback((date) => {
     const ds = getTodayStr(date)
-    const blocks = loadBlocks(ds)
     dispatch({ type: 'SET_DATE', payload: ds })
-    dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-  }, [])
+    dispatch({ type: 'SET_LOADING', payload: true })
+    fetchBlocks(supabase, ds).then(blocks => {
+      dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+      dispatch({ type: 'SET_LOADING', payload: false })
+    }).catch(() => {
+      dispatch({ type: 'SET_LOADING', payload: false })
+    })
+  }, [supabase])
 
   const addBlock = useCallback((block) => {
     dispatch({ type: 'ADD_BLOCK', payload: block })
@@ -48,9 +58,10 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'UPDATE_BLOCK', payload: { id, ...changes } })
   }, [])
 
-  const deleteBlock = useCallback((id) => {
+  const deleteBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
-  }, [])
+    deleteBlock(supabase, id).catch(console.error)
+  }, [supabase])
 
   const moveBlock = useCallback((id, newStart) => {
     dispatch({ type: 'MOVE_BLOCK', payload: { id, newStart } })
@@ -81,19 +92,20 @@ export function StoreProvider({ children }) {
     blocks: state.blocks,
     dateStr: state.dateStr,
     loaded: state.loaded,
+    loading: state.loading,
     selectedId: state.selectedId,
     completedDays: state.completedDays,
     streak,
     goToDate,
     addBlock,
     updateBlock,
-    deleteBlock,
+    deleteBlock: deleteBlockAction,
     moveBlock,
     resizeBlock,
     resizeBlockStart,
     selectBlock,
     completeDay,
-  }), [state.blocks, state.dateStr, state.loaded, state.selectedId, state.completedDays, streak, goToDate, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, completeDay])
+  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, goToDate, addBlock, updateBlock, deleteBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, completeDay])
 
   return (
     <StoreContext.Provider value={value}>

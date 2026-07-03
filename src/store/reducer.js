@@ -89,6 +89,9 @@ export function blockReducer(state, action) {
     case 'LOAD_COMPLETED': {
       return { ...state, completedDays: action.payload }
     }
+    case 'SET_LOADING': {
+      return { ...state, loading: action.payload }
+    }
     default:
       return state
   }
