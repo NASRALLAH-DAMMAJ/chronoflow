@@ -314,7 +314,9 @@ function drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart,
     const my = cy + Math.sin(midAngle) * midR
     ctx.setLineDash([])
     ctx.translate(mx, my)
-    ctx.rotate(midAngle + PI / 2)
+    let rot = midAngle + PI / 2
+    if (rot > PI / 2 || rot < -PI / 2) rot += rot > 0 ? -PI : PI
+    ctx.rotate(rot)
     ctx.fillStyle = pColor
     ctx.font = 'bold 11px Inter, sans-serif'
     ctx.textAlign = 'center'
