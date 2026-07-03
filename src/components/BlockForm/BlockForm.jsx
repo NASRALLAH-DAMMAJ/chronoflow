@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../../design-system/components'
 import { BLOCK_CATEGORIES } from '../../store/constants'
+import { TimeBar } from './TimeBar'
 
-function minutesToStr(m) {
-  const h = Math.floor(m / 60)
-  const min = m % 60
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
-}
-
-function strToMinutes(s) {
-  const [h, m] = s.split(':').map(Number)
-  return h * 60 + m
-}
-
-export function BlockForm({ block, onAddBlock, onUpdateBlock, onPlaceBlock, onClose }) {
+export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
   const isEditing = !!block
   const [label, setLabel] = useState(block ? block.label : '')
-  const [start, setStart] = useState(block ? minutesToStr(block.start) : '09:00')
-  const [end, setEnd] = useState(block ? minutesToStr(block.end) : '10:00')
+  const [startMin, setStartMin] = useState(block ? block.start : 540)
+  const [endMin, setEndMin] = useState(block ? block.end : 600)
   const [category, setCategory] = useState(block ? block.category : 'work')
 
   useEffect(() => {
@@ -33,19 +23,23 @@ export function BlockForm({ block, onAddBlock, onUpdateBlock, onPlaceBlock, onCl
     if (!label.trim()) return
 
     if (isEditing) {
-      const startMin = strToMinutes(start)
-      const endMin = strToMinutes(end) || 1440
-      if (endMin <= startMin) return
-      onUpdateBlock(block.id, { start: startMin, end: endMin, label: label.trim(), category })
+      const finalEnd = endMin <= startMin ? startMin + 15 : endMin
+      onUpdateBlock(block.id, {
+        start: startMin,
+        end: Math.min(finalEnd, 1440),
+        label: label.trim(),
+        category,
+      })
+      if (onClose) onClose()
     } else {
       onPlaceBlock(label.trim(), category)
     }
-
-    if (onClose) onClose()
   }
 
+  const duration = endMin > startMin ? endMin - startMin : 1440 - startMin + endMin
+
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
         <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
           Label
@@ -69,54 +63,19 @@ export function BlockForm({ block, onAddBlock, onUpdateBlock, onPlaceBlock, onCl
           autoFocus
         />
       </div>
+
       {isEditing && (
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
-              Start
-            </label>
-            <input
-              type="time"
-              value={start}
-              onChange={e => setStart(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                fontSize: 14,
-                fontFamily: 'var(--ff-body)',
-                color: 'var(--clr-text)',
-                backgroundColor: 'var(--clr-surface)',
-                border: '2px solid var(--clr-border)',
-                borderRadius: 6,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
-              End
-            </label>
-            <input
-              type="time"
-              value={end}
-              onChange={e => setEnd(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                fontSize: 14,
-                fontFamily: 'var(--ff-body)',
-                color: 'var(--clr-text)',
-                backgroundColor: 'var(--clr-surface)',
-                border: '2px solid var(--clr-border)',
-                borderRadius: 6,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 6, display: 'block' }}>
+            Duration
+          </label>
+          <TimeBar duration={duration} onChange={(newDur) => {
+            const newEnd = (startMin + newDur) % 1440
+            setEndMin(newEnd)
+          }} />
         </div>
       )}
+
       <div>
         <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
           Category
@@ -141,9 +100,10 @@ export function BlockForm({ block, onAddBlock, onUpdateBlock, onPlaceBlock, onCl
           ))}
         </select>
       </div>
+
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
         {onClose && <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>}
-        <Button variant="primary" type="submit" disabled={!label.trim()}>{isEditing ? 'Update' : 'Place on dial'}</Button>
+        <Button variant="primary" type="submit" disabled={!label.trim()}>{isEditing ? 'Update' : 'Next: Place on dial'}</Button>
       </div>
     </form>
   )
