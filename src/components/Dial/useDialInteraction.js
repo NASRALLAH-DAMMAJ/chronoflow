@@ -82,6 +82,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     dragRef.current = {
       ...hit,
       ptrWorldMinutes: wm,
+      lastSnapped: snapEnabled ? snap(wm) : wm,
       offset: wm - hit.block.start,
       cx, cy, outerR, innerR,
     }
@@ -96,7 +97,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    const { block, edge, cx, cy, outerR, offset, innerR } = df
+    const { block, edge, cx, cy, outerR, offset, innerR, lastSnapped } = df
 
     const dx = x - cx
     const dy = y - cy
@@ -105,6 +106,8 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
 
     const wm = pointerToWorldMinutes(x, y, cx, cy)
     const snapped = snapEnabled ? snap(wm) : wm
+    if (Math.abs(snapped - lastSnapped) > 720) return
+    df.lastSnapped = snapped
 
     let g = null
     if (edge === 'body') {
