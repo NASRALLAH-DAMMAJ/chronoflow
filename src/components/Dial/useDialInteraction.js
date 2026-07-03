@@ -82,7 +82,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     dragRef.current = {
       ...hit,
       ptrWorldMinutes: wm,
-      lastSnapped: snapEnabled ? snap(wm) : wm,
+      continuousWm: wm,
       offset: wm - hit.block.start,
       cx, cy, outerR, innerR,
     }
@@ -97,7 +97,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    const { block, edge, cx, cy, outerR, offset, innerR, lastSnapped } = df
+    const { block, edge, cx, cy, outerR, offset, innerR, continuousWm } = df
 
     const dx = x - cx
     const dy = y - cy
@@ -105,22 +105,25 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     if (dist < innerR || dist > outerR) return
 
     const wm = pointerToWorldMinutes(x, y, cx, cy)
-    const snapped = snapEnabled ? snap(wm) : wm
-    if (Math.abs(snapped - lastSnapped) > 720) return
-    df.lastSnapped = snapped
+    let cw = wm
+    if (continuousWm - wm > 720) cw = wm + 1440
+    else if (wm - continuousWm > 720) cw = wm - 1440
+    df.continuousWm = cw
+
+    const snapped = snapEnabled ? snap(cw) : cw
 
     let g = null
     if (edge === 'body') {
       const duration = block.end - block.start
       let newStart = snapped - offset
-      newStart = Math.max(0, Math.min(1440 - duration, newStart))
-      g = { ...block, start: Math.round(newStart), end: Math.round(newStart + duration) }
+      const displayStart = ((newStart % 1440) + 1440) % 1440
+      g = { ...block, start: Math.round(displayStart), end: Math.round(((displayStart + duration) % 1440 + 1440) % 1440 || 1440) }
     } else if (edge === 'end') {
-      const newEnd = snapped > block.start ? snapped : block.start + SNAP_MINUTES
-      g = { ...block, end: Math.round(newEnd) }
+      const displayEnd = ((snapped % 1440) + 1440) % 1440 || 1440
+      g = { ...block, end: Math.round(displayEnd > block.start ? displayEnd : block.start + SNAP_MINUTES) }
     } else if (edge === 'start') {
-      const newStart = snapped < block.end ? snapped : block.end - SNAP_MINUTES
-      g = { ...block, start: Math.round(newStart) }
+      const displayStart = ((snapped % 1440) + 1440) % 1440
+      g = { ...block, start: Math.round(displayStart < block.end ? displayStart : block.end - SNAP_MINUTES) }
     }
 
     ghostRef.current = g
