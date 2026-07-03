@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Link } from 'react-router-dom'
 import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS } from './store'
 import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
@@ -10,6 +10,7 @@ import { minutesToStr, formatDuration } from './utils'
 import { useSupabase } from './lib/SupabaseContext'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
+import RecurringRulesPage from './pages/RecurringRulesPage'
 
 function formatDateLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -142,7 +143,7 @@ function Onboarding({ onDismiss }) {
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
-  const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, loading, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
   const [placement, setPlacement] = useState(null)
@@ -196,6 +197,22 @@ function AppContent() {
   const todayStr = getTodayStr()
   const isToday = dateStr === todayStr
   const formOpen = showForm || editingBlock
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--clr-bg)',
+        color: 'var(--clr-text-secondary)',
+        fontSize: 14,
+      }}>
+        Loading...
+      </div>
+    )
+  }
 
   return (
     <>
@@ -254,6 +271,12 @@ function AppContent() {
           <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
             {isDark ? <><IconSun /> Light</> : <><IconMoon /> Dark</>}
           </Button>
+          <Link to="/settings" style={{
+            fontSize: 12, color: 'var(--clr-text-secondary)',
+            textDecoration: 'none', padding: '4px 8px',
+          }}>
+            Settings
+          </Link>
           <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()} style={{ fontSize: 12 }}>
             Sign out
           </Button>
@@ -355,6 +378,11 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <RecurringRulesPage />
+        </ProtectedRoute>
+      } />
       <Route path="/" element={
         <ProtectedRoute>
           <StoreProvider>
