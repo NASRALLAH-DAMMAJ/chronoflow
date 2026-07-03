@@ -3,6 +3,7 @@ import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, compu
 import { getTodayStr } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchBlocks, upsertBlocks, deleteBlock } from '../lib/blocks'
+import { fetchSchedule } from '../lib/schedule'
 
 const StoreContext = createContext(null)
 
@@ -22,12 +23,17 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     if (!user || initFetched.current) return
     initFetched.current = true
-    fetchBlocks(supabase, today).then(blocks => {
-      dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+    const load = async () => {
+      try {
+        const blocks = await fetchSchedule(supabase, today)
+        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+      } catch {
+        const blocks = await fetchBlocks(supabase, today)
+        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+      }
       dispatch({ type: 'SET_LOADING', payload: false })
-    }).catch(() => {
-      dispatch({ type: 'SET_LOADING', payload: false })
-    })
+    }
+    load()
   }, [user, supabase, today])
 
   useEffect(() => {
@@ -42,12 +48,17 @@ export function StoreProvider({ children }) {
     const ds = getTodayStr(date)
     dispatch({ type: 'SET_DATE', payload: ds })
     dispatch({ type: 'SET_LOADING', payload: true })
-    fetchBlocks(supabase, ds).then(blocks => {
-      dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+    const load = async () => {
+      try {
+        const blocks = await fetchSchedule(supabase, ds)
+        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+      } catch {
+        const blocks = await fetchBlocks(supabase, ds)
+        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+      }
       dispatch({ type: 'SET_LOADING', payload: false })
-    }).catch(() => {
-      dispatch({ type: 'SET_LOADING', payload: false })
-    })
+    }
+    load()
   }, [supabase])
 
   const addBlock = useCallback((block) => {
