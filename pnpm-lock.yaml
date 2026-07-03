@@ -14,9 +14,6 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
-      supabase:
-        specifier: ^2.109.0
-        version: 2.109.0
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -39,6 +36,9 @@ importers:
       prettier:
         specifier: ^3.9.4
         version: 3.9.4
+      supabase:
+        specifier: ^2.109.0
+        version: 2.109.0
       vite:
         specifier: ^6.0.0
         version: 6.4.3
