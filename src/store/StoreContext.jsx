@@ -60,6 +60,10 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'RESIZE_BLOCK', payload: { id, newEnd } })
   }, [])
 
+  const resizeBlockStart = useCallback((id, newStart) => {
+    dispatch({ type: 'RESIZE_BLOCK_START', payload: { id, newStart } })
+  }, [])
+
   const selectBlock = useCallback((id) => {
     dispatch({ type: 'SELECT_BLOCK', payload: { id } })
   }, [])
@@ -84,6 +88,7 @@ export function StoreProvider({ children }) {
       deleteBlock,
       moveBlock,
       resizeBlock,
+      resizeBlockStart,
       selectBlock,
       completeDay,
     }}>

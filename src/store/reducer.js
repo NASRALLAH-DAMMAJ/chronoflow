@@ -29,7 +29,8 @@ export function blockReducer(state, action) {
       const { id, newStart } = action.payload
       const block = state.blocks.find(b => b.id === id)
       if (!block) return state
-      const duration = block.end - block.start
+      const wraps = block.end <= block.start
+      const duration = wraps ? (block.end + 1440 - block.start) : (block.end - block.start)
       const snappedStart = snapToGrid(newStart)
       const newEnd = snapToGrid(snappedStart + duration)
       return {
@@ -50,7 +51,21 @@ export function blockReducer(state, action) {
         ...state,
         blocks: state.blocks.map(b =>
           b.id === id
-            ? { ...b, end: snappedEnd > b.start ? snappedEnd : b.end }
+            ? { ...b, end: snappedEnd === b.start ? (b.start === 0 ? 1440 : b.start === 1440 ? 0 : b.end) : snappedEnd }
+            : b
+        ),
+      }
+    }
+    case 'RESIZE_BLOCK_START': {
+      const { id, newStart } = action.payload
+      const block = state.blocks.find(b => b.id === id)
+      if (!block) return state
+      const snappedStart = snapToGrid(newStart)
+      return {
+        ...state,
+        blocks: state.blocks.map(b =>
+          b.id === id
+            ? { ...b, start: snappedStart === b.end ? (b.end === 0 ? 1440 : b.end === 1440 ? 0 : b.start) : snappedStart }
             : b
         ),
       }
