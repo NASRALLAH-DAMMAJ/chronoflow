@@ -142,11 +142,14 @@ function Onboarding({ onDismiss }) {
   )
 }
 
+let nextBlockId = 100
+
 function AppContent() {
   const { isDark, toggle } = useDarkMode()
   const { blocks, dateStr, selectedId, completedDays, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
+  const [placement, setPlacement] = useState(null)
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('cf-onboarded'))
 
   function dismissOnboarding() {
@@ -163,7 +166,29 @@ function AppContent() {
     setEditingBlock(null)
   }
 
+  function handlePlaceBlock(label, category) {
+    setPlacement({ label, category })
+  }
+
+  function handlePlaceOnDial(minute) {
+    const snapped = Math.round(minute / 15) * 15
+    addBlock({
+      id: Date.now() + nextBlockId++,
+      start: snapped,
+      end: Math.min(snapped + 60, 1440),
+      label: placement.label,
+      category: placement.category,
+      tags: [],
+    })
+    setPlacement(null)
+  }
+
+  function cancelPlacement() {
+    setPlacement(null)
+  }
+
   function goToDay(delta) {
+    setPlacement(null)
     const d = new Date(dateStr + 'T00:00:00')
     d.setDate(d.getDate() + delta)
     goToDate(d)
@@ -207,7 +232,7 @@ function AppContent() {
           <input
             type="date"
             value={dateStr}
-            onChange={e => goToDate(new Date(e.target.value + 'T00:00:00'))}
+            onChange={e => { setPlacement(null); goToDate(new Date(e.target.value + 'T00:00:00')) }}
             style={{
               fontSize: 13,
               padding: '4px 8px',
@@ -224,7 +249,7 @@ function AppContent() {
             <IconChevronRight />
           </Button>
           {!isToday && (
-            <Button variant="ghost" size="sm" onClick={() => goToDate()}>
+            <Button variant="ghost" size="sm" onClick={() => { setPlacement(null); goToDate() }}>
               Today
             </Button>
           )}
@@ -241,13 +266,31 @@ function AppContent() {
         alignItems: 'start',
         flex: 1,
       }}>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          {placement && (
+            <div style={{
+              fontSize: 13, color: 'var(--clr-text-secondary)',
+              backgroundColor: 'var(--clr-surface)',
+              padding: '6px 14px', borderRadius: 6,
+              border: '1px solid var(--clr-border)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              Tap the dial to place <strong>{placement.label}</strong>
+              <button onClick={cancelPlacement} style={{
+                border: 'none', background: 'none',
+                color: 'var(--clr-text-tertiary)', cursor: 'pointer', fontSize: 14, padding: 0,
+              }}>✕</button>
+            </div>
+          )}
           <Dial
             blocks={blocks}
             selectedId={selectedId}
+            placement={placement}
             onMoveBlock={moveBlock}
             onResizeBlock={resizeBlock}
             onSelectBlock={selectBlock}
+            onPlaceBlock={handlePlaceOnDial}
+            onCancelPlacement={cancelPlacement}
             size={380}
           />
         </div>
@@ -258,7 +301,7 @@ function AppContent() {
               <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 600, color: 'var(--clr-text)', margin: 0 }}>
                 Blocks
               </h2>
-              <Button variant="primary" size="sm" onClick={() => { setEditingBlock(null); setShowForm(!showForm) }}>
+              <Button variant="primary" size="sm" onClick={() => { setPlacement(null); setEditingBlock(null); setShowForm(!showForm) }}>
                 <IconPlus /> Add
               </Button>
             </div>
@@ -267,9 +310,9 @@ function AppContent() {
               <div style={{ marginBottom: 16 }}>
                 <BlockForm
                   block={editingBlock}
-                  blocks={blocks}
                   onAddBlock={addBlock}
                   onUpdateBlock={updateBlock}
+                  onPlaceBlock={handlePlaceBlock}
                   onClose={closeForm}
                 />
               </div>

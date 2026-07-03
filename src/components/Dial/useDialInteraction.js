@@ -17,7 +17,7 @@ function angleDiff(a1, a2) {
   return Math.abs(d)
 }
 
-export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelectBlock, zoomRange, snapEnabled = true }) {
+export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelectBlock, zoomRange, snapEnabled = true, disabled = false }) {
   const dragRef = useRef(null)
   const ghostRef = useRef(null)
   const [tick, setTick] = useState(0)
@@ -61,6 +61,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
   }
 
   const handlePointerDown = useCallback((e) => {
+    if (disabled) return
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
@@ -86,7 +87,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     }
     ghostRef.current = null
     setTick(t => t + 1)
-  }, [blocks, onSelectBlock, zoomRange])
+  }, [blocks, onSelectBlock, zoomRange, disabled])
 
   const handlePointerMove = useCallback((e) => {
     const df = dragRef.current

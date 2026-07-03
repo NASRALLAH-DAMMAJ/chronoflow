@@ -14,7 +14,9 @@ function minutesToStr(m) {
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
 }
 
-export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectBlock, size = 380 }) {
+const DEFAULT_DURATION = 60
+
+export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectBlock, onPlaceBlock, onCancelPlacement, placement, size = 380 }) {
   const canvasRef = useRef(null)
   const [currentTime, setCurrentTime] = useState(getCurrentMinutes())
   const [zoomRange, setZoomRange] = useState(null)
@@ -31,11 +33,14 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectB
     onResizeBlock,
     onSelectBlock,
     zoomRange,
+    disabled: !!placement,
   })
 
   const displayBlocks = ghost
     ? blocksWithColor.map(b => b.id === ghost.id ? ghost : b)
     : blocksWithColor
+
+  const [placementPos, setPlacementPos] = useState(null)
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(getCurrentMinutes()), 60000)
@@ -67,8 +72,8 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectB
       accent: style.getPropertyValue('--clr-primary-light').trim() || '#DBEAFE',
     }
 
-    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colors, zoomRange)
-  }, [displayBlocks, selectedId, currentTime, size, zoomRange])
+    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colors, zoomRange, placement, placementPos)
+  }, [displayBlocks, selectedId, currentTime, size, zoomRange, placement, placementPos])
 
   const handleWheel = useCallback((e) => {
     e.preventDefault()
@@ -98,7 +103,7 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectB
     } else {
       const { start, end } = zoomRange
       const range = end - start
-      const newRange = Math.max(30, Math.min(1440, range * zoomFactor))
+      const newRange = Math.max(30, Math.min(1440, range / zoomFactor))
 
       const pointerWorldMinute = start + (pointerRenderMinute / 1440) * range
       let newStart = pointerWorldMinute - (pointerRenderMinute / 1440) * newRange
@@ -129,7 +134,7 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectB
       e.preventDefault()
       const t = e.touches
       const dist = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
-      const scale = pinchRef.current.dist / dist
+      const scale = dist / pinchRef.current.dist
       pinchRef.current.dist = dist
 
       const rect = e.currentTarget.getBoundingClientRect()
@@ -170,6 +175,39 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectB
 
   const resetZoom = useCallback(() => setZoomRange(null), [])
 
+  const handlePlacePointerDown = useCallback((e) => {
+    if (!placement) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const cx = rect.width / 2
+    const cy = rect.height / 2
+    const angle = Math.atan2(y - cy, x - cx)
+    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+    onPlaceBlock(minute)
+  }, [placement, onPlaceBlock])
+
+  const handlePlacePointerMove = useCallback((e) => {
+    if (!placement) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const cx = rect.width / 2
+    const cy = rect.height / 2
+    const dx = x - cx
+    const dy = y - cy
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    const radius = Math.min(cx, cy) - 20
+    const innerR = radius * 0.6
+    if (dist < innerR || dist > radius) {
+      setPlacementPos(null)
+      return
+    }
+    const angle = Math.atan2(dy, dx)
+    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+    setPlacementPos(minute)
+  }, [placement])
+
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <canvas
@@ -179,14 +217,17 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onSelectB
           height: size,
           maxWidth: '100%',
           borderRadius: '50%',
-          cursor: ghost ? 'grabbing' : 'grab',
+          cursor: placement ? 'crosshair' : ghost ? 'grabbing' : 'grab',
           touchAction: 'none',
         }}
-        onWheel={handleWheel}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        {...handlers}
+        onWheel={placement ? undefined : handleWheel}
+        onTouchStart={placement ? undefined : handleTouchStart}
+        onTouchMove={placement ? undefined : handleTouchMove}
+        onTouchEnd={placement ? undefined : handleTouchEnd}
+        onPointerDown={placement ? handlePlacePointerDown : handlers.onPointerDown}
+        onPointerMove={placement ? handlePlacePointerMove : handlers.onPointerMove}
+        onPointerUp={placement ? undefined : handlers.onPointerUp}
+        onPointerLeave={placement ? undefined : handlers.onPointerLeave}
       />
       {zoomRange && (
         <div style={{

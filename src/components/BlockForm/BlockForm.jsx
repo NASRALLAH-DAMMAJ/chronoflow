@@ -13,16 +13,7 @@ function strToMinutes(s) {
   return h * 60 + m
 }
 
-let nextId = 100
-
-function findOverlaps(blocks, startMin, endMin, excludeId) {
-  return blocks.filter(b => {
-    if (b.id === excludeId) return false
-    return b.start < endMin && b.end > startMin
-  })
-}
-
-export function BlockForm({ block, blocks = [], onAddBlock, onUpdateBlock, onClose }) {
+export function BlockForm({ block, onAddBlock, onUpdateBlock, onPlaceBlock, onClose }) {
   const isEditing = !!block
   const [label, setLabel] = useState(block ? block.label : '')
   const [start, setStart] = useState(block ? minutesToStr(block.start) : '09:00')
@@ -40,29 +31,18 @@ export function BlockForm({ block, blocks = [], onAddBlock, onUpdateBlock, onClo
   function handleSubmit(e) {
     e.preventDefault()
     if (!label.trim()) return
-    const startMin = strToMinutes(start)
-    const endMin = strToMinutes(end) || 1440
-    if (endMin <= startMin) return
 
     if (isEditing) {
+      const startMin = strToMinutes(start)
+      const endMin = strToMinutes(end) || 1440
+      if (endMin <= startMin) return
       onUpdateBlock(block.id, { start: startMin, end: endMin, label: label.trim(), category })
     } else {
-      onAddBlock({
-        id: Date.now() + nextId++,
-        start: startMin,
-        end: endMin,
-        label: label.trim(),
-        category,
-        tags: [],
-      })
+      onPlaceBlock(label.trim(), category)
     }
 
     if (onClose) onClose()
   }
-
-  const startMin = strToMinutes(start)
-  const endMin = strToMinutes(end) || 1440
-  const overlaps = endMin > startMin ? findOverlaps(blocks, startMin, endMin, block?.id) : []
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -89,52 +69,54 @@ export function BlockForm({ block, blocks = [], onAddBlock, onUpdateBlock, onClo
           autoFocus
         />
       </div>
-      <div style={{ display: 'flex', gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
-            Start
-          </label>
-          <input
-            type="time"
-            value={start}
-            onChange={e => setStart(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: 14,
-              fontFamily: 'var(--ff-body)',
-              color: 'var(--clr-text)',
-              backgroundColor: 'var(--clr-surface)',
-              border: '2px solid var(--clr-border)',
-              borderRadius: 6,
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
+      {isEditing && (
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
+              Start
+            </label>
+            <input
+              type="time"
+              value={start}
+              onChange={e => setStart(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: 14,
+                fontFamily: 'var(--ff-body)',
+                color: 'var(--clr-text)',
+                backgroundColor: 'var(--clr-surface)',
+                border: '2px solid var(--clr-border)',
+                borderRadius: 6,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
+              End
+            </label>
+            <input
+              type="time"
+              value={end}
+              onChange={e => setEnd(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: 14,
+                fontFamily: 'var(--ff-body)',
+                color: 'var(--clr-text)',
+                backgroundColor: 'var(--clr-surface)',
+                border: '2px solid var(--clr-border)',
+                borderRadius: 6,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
         </div>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
-            End
-          </label>
-          <input
-            type="time"
-            value={end}
-            onChange={e => setEnd(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: 14,
-              fontFamily: 'var(--ff-body)',
-              color: 'var(--clr-text)',
-              backgroundColor: 'var(--clr-surface)',
-              border: '2px solid var(--clr-border)',
-              borderRadius: 6,
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-        </div>
-      </div>
+      )}
       <div>
         <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--clr-text-secondary)', marginBottom: 4, display: 'block' }}>
           Category
@@ -159,18 +141,9 @@ export function BlockForm({ block, blocks = [], onAddBlock, onUpdateBlock, onClo
           ))}
         </select>
       </div>
-      {overlaps.length > 0 && (
-        <div style={{
-          fontSize: 12, color: 'var(--clr-warning, #F59E0B)',
-          backgroundColor: 'color-mix(in srgb, var(--clr-warning, #F59E0B) 10%, transparent)',
-          padding: '6px 10px', borderRadius: 6,
-        }}>
-          Overlaps with: {overlaps.map(b => b.label).join(', ')}
-        </div>
-      )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
         {onClose && <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>}
-        <Button variant="primary" type="submit" disabled={!label.trim() || endMin <= startMin}>{isEditing ? 'Update' : 'Add Block'}</Button>
+        <Button variant="primary" type="submit" disabled={!label.trim()}>{isEditing ? 'Update' : 'Place on dial'}</Button>
       </div>
     </form>
   )

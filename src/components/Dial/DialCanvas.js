@@ -1,14 +1,15 @@
-import { MINUTES_IN_DAY, RAD_PER_MINUTE } from '../../store/constants'
+import { MINUTES_IN_DAY, RAD_PER_MINUTE, CATEGORY_COLORS } from '../../store/constants'
 import { toRenderMinute, isVisible } from './zoom-utils'
 
 const PI = Math.PI
 const TAU = 2 * PI
+const DEFAULT_DURATION = 60
 
 function renderMinuteToRadians(rm) {
   return rm * RAD_PER_MINUTE - PI / 2
 }
 
-export function drawDial(ctx, cx, cy, radius, blocks, selectedId, currentTimeMinutes, colors, zoomRange) {
+export function drawDial(ctx, cx, cy, radius, blocks, selectedId, currentTimeMinutes, colors, zoomRange, placement, placementPos) {
   const { bg, border, text, textSecondary, primary } = colors
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
@@ -22,6 +23,31 @@ export function drawDial(ctx, cx, cy, radius, blocks, selectedId, currentTimeMin
   if (!zoomRange) {
     drawCurrentTime(ctx, cx, cy, innerR, arcWidth, currentTimeMinutes, primary)
   }
+  if (placement && placementPos != null) {
+    const rm = toRenderMinute(placementPos, zoomRange)
+    const startAngle = renderMinuteToRadians(rm)
+    const endAngle = renderMinuteToRadians(rm + DEFAULT_DURATION)
+    const outerR = innerR + arcWidth
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(cx, cy, outerR, startAngle, endAngle)
+    ctx.arc(cx, cy, innerR, endAngle, startAngle, true)
+    ctx.closePath()
+    ctx.fillStyle = selectedBlockColor(placement, blocks) || '#3B82F6'
+    ctx.globalAlpha = 0.3
+    ctx.fill()
+    ctx.setLineDash([4, 4])
+    ctx.strokeStyle = selectedBlockColor(placement, blocks) || '#3B82F6'
+    ctx.lineWidth = 2
+    ctx.globalAlpha = 0.8
+    ctx.stroke()
+    ctx.restore()
+  }
+}
+
+function selectedBlockColor(placement, blocks) {
+  const c = CATEGORY_COLORS[placement.category]
+  return c || CATEGORY_COLORS.other
 }
 
 function drawBackground(ctx, cx, cy, outerR, innerR, bg, border) {
