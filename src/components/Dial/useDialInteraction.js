@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState } from 'react'
 import { SNAP_MINUTES } from '../../store/constants'
-import { toWorldMinute, toRenderMinute } from './zoom-utils'
+import { toWorldMinute, toRenderMinute, isVisible } from './zoom-utils'
 
 function snap(minutes) {
   return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES
@@ -17,7 +17,7 @@ function angleDiff(a1, a2) {
   return Math.abs(d)
 }
 
-export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelectBlock, zoomRange, snapEnabled = true, disabled = false }) {
+export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, zoomRange, snapEnabled = true, disabled = false }) {
   const dragRef = useRef(null)
   const ghostRef = useRef(null)
   const [tick, setTick] = useState(0)
@@ -36,6 +36,39 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     const pointerAngle = Math.atan2(dy, dx)
     const pointerMinutes = pointerToWorldMinutes(x, y, cx, cy)
 
+    let bestEdgeHit = null
+    let minEdgeDiff = Infinity
+    const edgeThreshold = 0.12
+
+    for (const block of blocks) {
+      const start = block.start
+      const end = block.end
+
+      if (isVisible(start, zoomRange)) {
+        const renderStart = toRenderMinute(start, zoomRange)
+        const startAngle = (renderStart / 1440) * 2 * Math.PI - Math.PI / 2
+        const diff = angleDiff(pointerAngle, startAngle)
+        if (diff < edgeThreshold && diff < minEdgeDiff) {
+          minEdgeDiff = diff
+          bestEdgeHit = { block, edge: 'start' }
+        }
+      }
+
+      if (isVisible(end, zoomRange)) {
+        const renderEnd = toRenderMinute(end, zoomRange)
+        const endAngle = (renderEnd / 1440) * 2 * Math.PI - Math.PI / 2
+        const diff = angleDiff(pointerAngle, endAngle)
+        if (diff < edgeThreshold && diff < minEdgeDiff) {
+          minEdgeDiff = diff
+          bestEdgeHit = { block, edge: 'end' }
+        }
+      }
+    }
+
+    if (bestEdgeHit) {
+      return bestEdgeHit
+    }
+
     for (const block of blocks) {
       const start = block.start
       const end = block.end
@@ -45,18 +78,11 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
         ? (pointerMinutes >= start || pointerMinutes <= end)
         : (pointerMinutes >= start && pointerMinutes <= end)
 
-      if (!inBlock) continue
-
-      const renderStart = toRenderMinute(start, zoomRange)
-      const renderEnd = toRenderMinute(end, zoomRange)
-      const startAngle = (renderStart / 1440) * 2 * Math.PI - Math.PI / 2
-      const endAngle = (renderEnd / 1440) * 2 * Math.PI - Math.PI / 2
-      const edgeThreshold = 0.12
-
-      if (angleDiff(pointerAngle, startAngle) < edgeThreshold) return { block, edge: 'start' }
-      if (angleDiff(pointerAngle, endAngle) < edgeThreshold) return { block, edge: 'end' }
-      return { block, edge: 'body' }
+      if (inBlock) {
+        return { block, edge: 'body' }
+      }
     }
+
     return null
   }
 
@@ -114,16 +140,25 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
 
     let g = null
     if (edge === 'body') {
-      const duration = block.end - block.start
+      const wraps = block.end <= block.start
+      const duration = wraps ? (block.end + 1440 - block.start) : (block.end - block.start)
       let newStart = snapped - offset
       const displayStart = ((newStart % 1440) + 1440) % 1440
       g = { ...block, start: Math.round(displayStart), end: Math.round(((displayStart + duration) % 1440 + 1440) % 1440 || 1440) }
     } else if (edge === 'end') {
       const displayEnd = ((snapped % 1440) + 1440) % 1440 || 1440
-      g = { ...block, end: Math.round(displayEnd > block.start ? displayEnd : block.start + SNAP_MINUTES) }
+      if (displayEnd === block.start) {
+        g = { ...block, end: Math.round(block.start + SNAP_MINUTES > 1440 ? SNAP_MINUTES : block.start + SNAP_MINUTES) }
+      } else {
+        g = { ...block, end: Math.round(displayEnd) }
+      }
     } else if (edge === 'start') {
       const displayStart = ((snapped % 1440) + 1440) % 1440
-      g = { ...block, start: Math.round(displayStart < block.end ? displayStart : block.end - SNAP_MINUTES) }
+      if (displayStart === block.end) {
+        g = { ...block, start: Math.round(block.end - SNAP_MINUTES < 0 ? block.end + 1440 - SNAP_MINUTES : block.end - SNAP_MINUTES) }
+      } else {
+        g = { ...block, start: Math.round(displayStart) }
+      }
     }
 
     ghostRef.current = g
@@ -139,10 +174,10 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onSelec
     if (g) {
       if (df.edge === 'body') onMoveBlock(df.block.id, Math.round(g.start))
       else if (df.edge === 'end') onResizeBlock(df.block.id, Math.round(g.end))
-      else if (df.edge === 'start') onMoveBlock(df.block.id, Math.round(g.start))
+      else if (df.edge === 'start') onResizeBlockStart(df.block.id, Math.round(g.start))
     }
     setTick(t => t + 1)
-  }, [onMoveBlock, onResizeBlock])
+  }, [onMoveBlock, onResizeBlock, onResizeBlockStart])
 
   return {
     ghost: ghostRef.current,
