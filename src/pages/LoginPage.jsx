@@ -5,7 +5,10 @@ export default function LoginPage() {
   const { supabase } = useSupabase()
 
   function handleGoogleLogin() {
-    supabase.auth.signInWithOAuth({ provider: 'google' })
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
   }
 
   return (
