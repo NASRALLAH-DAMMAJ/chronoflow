@@ -5,9 +5,8 @@ import { CATEGORY_COLORS } from '../../store/constants'
 import { minutesToStr } from '../../utils'
 
 function getCurrentMinutes() {
-  const h = Math.floor(((m % 1440) + 1440) % 1440 / 60)
-  const min = ((m % 1440) + 1440) % 1440 % 60
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+  const now = new Date()
+  return now.getHours() * 60 + now.getMinutes()
 }
 
 export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, placement, size = 380 }) {
