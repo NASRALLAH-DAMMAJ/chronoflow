@@ -1,9 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
+import { useSessionMonitor } from '../hooks/useSessionMonitor'
 import { ROUTES } from '../store/constants'
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useSupabase()
+  useSessionMonitor()
 
   if (loading) {
     return (

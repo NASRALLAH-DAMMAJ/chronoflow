@@ -1,10 +1,18 @@
 import React from 'react'
 import { Button, Card, Text } from '@mantine/core'
+import { isNetworkError } from '../lib/retry'
+
+const MAX_RETRIES = 3
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = {
+      hasError: false,
+      error: null,
+      retryCount: 0,
+      isRetrying: false,
+    }
   }
 
   static getDerivedStateFromError(error) {
@@ -15,8 +23,30 @@ export default class ErrorBoundary extends React.Component {
     console.error(`[ErrorBoundary] ${this.props.name || 'component'}:`, error, errorInfo)
   }
 
+  handleRetry = () => {
+    if (this.state.retryCount >= MAX_RETRIES) return
+    this.setState({ isRetrying: true })
+    setTimeout(() => {
+      this.setState(prev => ({
+        hasError: false,
+        error: null,
+        retryCount: prev.retryCount + 1,
+        isRetrying: false,
+      }))
+    }, 300)
+  }
+
+  handleDismiss = () => {
+    this.setState({ hasError: false, error: null, retryCount: 0 })
+  }
+
   render() {
     if (this.state.hasError) {
+      const { error, retryCount, isRetrying } = this.state
+      const isNetwork = isNetworkError(error)
+      const canRetry = retryCount < MAX_RETRIES
+      const name = this.props.name || 'This section'
+
       return (
         <Card
           shadow="sm"
@@ -29,22 +59,43 @@ export default class ErrorBoundary extends React.Component {
           }}
         >
           <Text fw={600} size="lg" color="red" mb={4}>
-            Something went wrong
+            {isNetwork ? 'Connection Problem' : 'Something went wrong'}
           </Text>
           <Text size="sm" color="dimmed" mb={12}>
-            {this.props.name || 'This section'} failed to load. Your data is safe.
+            {isNetwork
+              ? `${name} couldn't load. Check your internet connection.`
+              : `${name} failed to load. Your data is safe.`
+            }
           </Text>
           <Text size="xs" color="dimmed" mb={12} style={{ fontFamily: 'monospace', fontSize: 11 }}>
-            {this.state.error?.message || 'Unknown error'}
+            {error?.message || 'Unknown error'}
           </Text>
-          <Button
-            size="xs"
-            variant="light"
-            color="red"
-            onClick={() => this.setState({ hasError: false, error: null })}
-          >
-            Try Again
-          </Button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {canRetry && (
+              <Button
+                size="xs"
+                variant="light"
+                color="red"
+                loading={isRetrying}
+                onClick={this.handleRetry}
+              >
+                {isRetrying ? 'Retrying...' : `Retry${retryCount > 0 ? ` (${retryCount}/${MAX_RETRIES})` : ''}`}
+              </Button>
+            )}
+            <Button
+              size="xs"
+              variant="subtle"
+              color="gray"
+              onClick={this.handleDismiss}
+            >
+              Dismiss
+            </Button>
+          </div>
+          {retryCount >= MAX_RETRIES && (
+            <Text size="xs" color="dimmed" mt={8}>
+              Multiple retries failed. Try refreshing the page.
+            </Text>
+          )}
         </Card>
       )
     }

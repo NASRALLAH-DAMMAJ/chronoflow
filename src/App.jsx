@@ -11,6 +11,8 @@ import { IconPlus, IconSun, IconMoon, IconChevronLeft, IconChevronRight } from '
 import { minutesToStr, formatDateLabel, snapToGrid } from './utils'
 import { useSupabase } from './lib/SupabaseContext'
 import ErrorBoundary from './components/ErrorBoundary'
+import OfflineBanner from './components/OfflineBanner'
+import { useSessionMonitor } from './hooks/useSessionMonitor'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 import RecurringRulesPage from './pages/RecurringRulesPage'
@@ -316,45 +318,48 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-      <Route path={ROUTES.SETTINGS} element={
-        <ProtectedRoute>
-          <ErrorBoundary name="Settings">
-            <SettingsPage />
-          </ErrorBoundary>
-        </ProtectedRoute>
-      } />
-      <Route path={ROUTES.RULES} element={
-        <ProtectedRoute>
-          <ErrorBoundary name="Recurring Rules">
-            <RecurringRulesPage />
-          </ErrorBoundary>
-        </ProtectedRoute>
-      } />
-      <Route path={ROUTES.ANALYTICS} element={
-        <ProtectedRoute>
-          <ErrorBoundary name="Analytics">
-            <AnalyticsPage />
-          </ErrorBoundary>
-        </ProtectedRoute>
-      } />
-      <Route path={ROUTES.ARCHIVE} element={
-        <ProtectedRoute>
-          <ErrorBoundary name="Archive">
-            <ArchivePage />
-          </ErrorBoundary>
-        </ProtectedRoute>
-      } />
-      <Route path={ROUTES.HOME} element={
-        <ProtectedRoute>
-          <StoreProvider>
-            <ErrorBoundary name="Home">
-              <AppContent />
+    <>
+      <OfflineBanner />
+      <Routes>
+        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+        <Route path={ROUTES.SETTINGS} element={
+          <ProtectedRoute>
+            <ErrorBoundary name="Settings">
+              <SettingsPage />
             </ErrorBoundary>
-          </StoreProvider>
-        </ProtectedRoute>
-      } />
-    </Routes>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.RULES} element={
+          <ProtectedRoute>
+            <ErrorBoundary name="Recurring Rules">
+              <RecurringRulesPage />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.ANALYTICS} element={
+          <ProtectedRoute>
+            <ErrorBoundary name="Analytics">
+              <AnalyticsPage />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.ARCHIVE} element={
+          <ProtectedRoute>
+            <ErrorBoundary name="Archive">
+              <ArchivePage />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } />
+        <Route path={ROUTES.HOME} element={
+          <ProtectedRoute>
+            <StoreProvider>
+              <ErrorBoundary name="Home">
+                <AppContent />
+              </ErrorBoundary>
+            </StoreProvider>
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </>
   )
 }
