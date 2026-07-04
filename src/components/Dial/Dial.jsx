@@ -144,6 +144,24 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     }
   }, [zoomRange, placement])
 
+  const handleKeyDown = useCallback((e) => {
+    if (placement) return
+    const STEP = e.shiftKey ? 60 : 15
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      setCurrentTime(t => (t + STEP) % MINUTES_IN_DAY)
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      setCurrentTime(t => (t - STEP + MINUTES_IN_DAY) % MINUTES_IN_DAY)
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      setCurrentTime(0)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      setCurrentTime(MINUTES_IN_DAY - 1)
+    }
+  }, [placement])
+
   const handleTouchStart = useCallback((e) => {
     if (placement) return
     if (e.touches.length === 2) {
@@ -278,10 +296,18 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: '100%', maxWidth: size, margin: '0 auto' }}>
+      <div className="sr-only" aria-live="polite">
+        {displayBlocks.length > 0
+          ? `Current time: ${minutesToStr(currentTime)}. ${displayBlocks.length} block${displayBlocks.length !== 1 ? 's' : ''} scheduled.`
+          : `Current time: ${minutesToStr(currentTime)}. No blocks scheduled.`
+        }
+      </div>
       <canvas
         ref={canvasRef}
         role="img"
-        aria-label="24-hour time dial. Use pointer to select and drag time blocks."
+        aria-label={`24-hour time dial showing ${minutesToStr(currentTime)}. ${displayBlocks.length} time block${displayBlocks.length !== 1 ? 's' : ''}.`}
+        aria-roledescription="Interactive circular time dial"
+        tabIndex={0}
         style={{
           width: '100%',
           maxWidth: '100%',
@@ -299,6 +325,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         onPointerMove={placement ? handlePlacePointerMove : handlers.onPointerMove}
         onPointerUp={placement ? handlePlacePointerUp : handlers.onPointerUp}
         onPointerLeave={placement ? handlePlacePointerLeave : handlers.onPointerLeave}
+        onKeyDown={handleKeyDown}
       />
       {zoomRange && (
         <div style={{
@@ -322,6 +349,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
           {minutesToStr(zoomRange.start)} – {minutesToStr(zoomRange.end)}
           <button
             onClick={resetZoom}
+            aria-label="Reset zoom"
             style={{
               border: 'none',
               background: 'none',

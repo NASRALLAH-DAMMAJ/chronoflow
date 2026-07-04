@@ -143,14 +143,18 @@ function AppContent() {
   return (
     <>
       {showOnboarding && <Onboarding onDismiss={dismissOnboarding} />}
-      <div style={{
-        maxWidth: 1000,
-        margin: '0 auto',
-        padding: 'var(--sp-6) var(--sp-4)',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
+      <div
+        id="main-content"
+        tabIndex={-1}
+        style={{
+          maxWidth: 1000,
+          margin: '0 auto',
+          padding: 'var(--sp-6) var(--sp-4)',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
       <header style={{
         display: 'flex',
         alignItems: 'center',
@@ -279,21 +283,23 @@ function AppContent() {
               </div>
             )}
 
-            <BlockList
-              blocks={blocks}
-              selectedId={selectedId}
-              onSelectBlock={selectBlock}
-              onDeleteBlock={handleDelete}
-              onArchiveBlock={handleArchive}
-              onEditBlock={handleEdit}
-              contextBlockId={contextBlockId}
-              onContextMenu={setContextBlockId}
-              contextRef={contextRef}
-              onEditRule={() => navigate(ROUTES.RULES)}
-            />
+            <div aria-live="polite" aria-label="Time blocks">
+              <BlockList
+                blocks={blocks}
+                selectedId={selectedId}
+                onSelectBlock={selectBlock}
+                onDeleteBlock={handleDelete}
+                onArchiveBlock={handleArchive}
+                onEditBlock={handleEdit}
+                contextBlockId={contextBlockId}
+                onContextMenu={setContextBlockId}
+                contextRef={contextRef}
+                onEditRule={() => navigate(ROUTES.RULES)}
+              />
+            </div>
 
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 13, color: 'var(--clr-text-tertiary)' }}>
+              <div aria-live="polite" style={{ fontSize: 13, color: 'var(--clr-text-tertiary)' }}>
                 Streak: <strong>{streak}</strong> {streak === 1 ? 'day' : 'days'}
               </div>
               {isToday && !completedDays.includes(dateStr) && (
@@ -335,6 +341,9 @@ function PageSpinner() {
 export default function App() {
   return (
     <>
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <OfflineBanner />
       <React.Suspense fallback={<PageSpinner />}>
         <Routes>
