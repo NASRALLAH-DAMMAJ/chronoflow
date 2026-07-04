@@ -44,13 +44,17 @@ interface BlockOutput {
 
 export default {
   fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
-    const { user_id, date, timezone } = await req.json();
-
-    if (!user_id || !date) {
-      return Response.json({ error: "user_id and date are required" }, { status: 400 });
+    if (!ctx.user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = user_id as string;
+    const userId = ctx.user.id;
+    const { date, timezone } = await req.json();
+
+    if (!date) {
+      return Response.json({ error: "date is required" }, { status: 400 });
+    }
+
     const dateStr = date as string;
     const tz = (timezone as string) || "UTC";
 

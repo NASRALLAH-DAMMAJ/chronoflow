@@ -12,9 +12,10 @@ function ruleFromDb(row) {
   }
 }
 
-function ruleToDb(rule) {
+function ruleToDb(rule, userId) {
   return {
     id: rule.id,
+    user_id: userId,
     days_of_week: rule.daysOfWeek,
     start_min: rule.startMin,
     duration: rule.duration,
@@ -33,8 +34,9 @@ export async function fetchRules(supabase) {
   return (data || []).map(ruleFromDb)
 }
 
-export async function addRule(supabase, rule) {
-  const dbRule = ruleToDb(rule)
+export async function addRule(supabase, rule, userId) {
+  if (!userId) throw new Error('userId required for addRule')
+  const dbRule = ruleToDb(rule, userId)
   const { error } = await supabase
     .from('recurring_rules')
     .insert(dbRule)

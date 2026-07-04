@@ -19,6 +19,7 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
   const [placementPos, setPlacementPos] = useState(null)
   const colorsRef = useRef(null)
   const pinchRef = useRef(null)
+  const [themeVersion, setThemeVersion] = useState(0)
 
   useEffect(() => {
     const el = wrapperRef.current
@@ -40,7 +41,10 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
 
   useEffect(() => {
     const root = document.documentElement
-    const observer = new MutationObserver(() => { colorsRef.current = null })
+    const observer = new MutationObserver(() => {
+      colorsRef.current = null
+      setThemeVersion(v => v + 1)
+    })
     observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] })
     return () => observer.disconnect()
   }, [])
@@ -76,6 +80,7 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     canvas.width = dialSize * dpr
     canvas.height = dialSize * dpr
     const ctx = canvas.getContext('2d')
+    if (!ctx) return
     ctx.scale(dpr, dpr)
 
     const cx = dialSize / 2
@@ -97,7 +102,7 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     }
 
     drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart)
-  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart])
+  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart, themeVersion])
 
   const handleWheel = useCallback((e) => {
     if (placement) return

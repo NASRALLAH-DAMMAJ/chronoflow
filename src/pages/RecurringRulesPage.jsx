@@ -26,7 +26,7 @@ function emptyRule() {
 }
 
 export default function RecurringRulesPage() {
-  const { supabase } = useSupabase()
+  const { supabase, user } = useSupabase()
   const navigate = useNavigate()
   const [rules, setRules] = useState([])
   const [editing, setEditing] = useState(null)
@@ -48,7 +48,7 @@ export default function RecurringRulesPage() {
         await updateRule(supabase, editing.id, editing)
         setRules(prev => prev.map(r => r.id === editing.id ? editing : r))
       } else {
-        await addRule(supabase, editing)
+        await addRule(supabase, editing, user.id)
         setRules(prev => [...prev, editing])
       }
       setEditing(null)

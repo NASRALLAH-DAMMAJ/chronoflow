@@ -22,6 +22,7 @@ export function StoreProvider({ children }) {
   const initFetched = useRef(false)
   const genRef = useRef(0)
   const userIdRef = useRef(null)
+  const hasLoadedOnce = useRef(false)
 
   useEffect(() => {
     if (!user || initFetched.current) return
@@ -29,7 +30,7 @@ export function StoreProvider({ children }) {
     userIdRef.current = user.id
     const currentUser = user.id
     ;(async () => {
-      await migrateLocalStorage(supabase)
+      await migrateLocalStorage(supabase, user.id)
       if (userIdRef.current !== currentUser) return
       try {
         const blocks = await fetchSchedule(supabase, today)
@@ -44,17 +45,18 @@ export function StoreProvider({ children }) {
           dispatch({ type: 'LOAD_BLOCKS', payload: [] })
         }
       }
+      hasLoadedOnce.current = true
       dispatch({ type: 'SET_LOADING', payload: false })
     })()
   }, [user, supabase, today])
 
   useEffect(() => {
-    if (!state.loaded || !user || state.blocks.length === 0) return
+    if (!hasLoadedOnce.current || !user) return
     const timer = setTimeout(() => {
-      upsertBlocks(supabase, state.dateStr, state.blocks).catch(console.error)
+      upsertBlocks(supabase, state.dateStr, state.blocks, user.id).catch(console.error)
     }, 500)
     return () => clearTimeout(timer)
-  }, [state.dateStr, state.blocks, state.loaded, user, supabase])
+  }, [state.dateStr, state.blocks, user, supabase])
 
   const goToDate = useCallback((date) => {
     const ds = getTodayStr(date)
@@ -106,12 +108,13 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'SELECT_BLOCK', payload: { id } })
   }, [])
 
+  useEffect(() => {
+    saveCompletedDays(state.completedDays)
+  }, [state.completedDays])
+
   const completeDay = useCallback((dateStr) => {
     dispatch({ type: 'COMPLETE_DAY', payload: dateStr })
-    if (!state.completedDays.includes(dateStr)) {
-      saveCompletedDays([...state.completedDays, dateStr])
-    }
-  }, [state.completedDays])
+  }, [])
 
   const streak = useMemo(() => computeStreak(state.completedDays), [state.completedDays])
 

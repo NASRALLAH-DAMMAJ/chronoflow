@@ -1,9 +1,10 @@
 const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id'
 
-function blockToDb(block, dateStr) {
+export function blockToDb(block, dateStr, userId) {
   const wraps = block.end <= block.start
   return {
     id: block.id,
+    user_id: userId,
     date: dateStr,
     start_min: block.start,
     duration: wraps ? block.end + 1440 - block.start : block.end - block.start,
@@ -14,12 +15,12 @@ function blockToDb(block, dateStr) {
   }
 }
 
-function blockFromDb(row) {
+export function blockFromDb(row) {
   const end = row.start_min + row.duration
   return {
     id: row.id,
     start: row.start_min,
-    end: end >= 1440 ? end - 1440 : end,
+    end: end > 1440 ? end - 1440 : end,
     label: row.label,
     category: row.category,
     is_recurring: row.is_recurring || false,
@@ -38,8 +39,9 @@ export async function fetchBlocks(supabase, dateStr) {
   return (data || []).map(blockFromDb)
 }
 
-export async function upsertBlocks(supabase, dateStr, blocks) {
-  const dbBlocks = blocks.map(b => blockToDb(b, dateStr))
+export async function upsertBlocks(supabase, dateStr, blocks, userId) {
+  if (!userId) throw new Error('userId required for upsertBlocks')
+  const dbBlocks = blocks.map(b => blockToDb(b, dateStr, userId))
   const { error } = await supabase
     .from('blocks')
     .upsert(dbBlocks, { onConflict: 'id' })

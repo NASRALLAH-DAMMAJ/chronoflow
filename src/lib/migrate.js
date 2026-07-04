@@ -6,7 +6,8 @@ function lsSet(key, val) {
   try { localStorage.setItem(key, val) } catch {}
 }
 
-export async function migrateLocalStorage(supabase) {
+export async function migrateLocalStorage(supabase, userId) {
+  if (!userId) return false
   if (lsGet('cf-migrated')) return false
 
   const keys = []
@@ -34,6 +35,7 @@ export async function migrateLocalStorage(supabase) {
 
       const dbBlocks = blocks.map(b => ({
         id: b.id,
+        user_id: userId,
         date: dateStr,
         start_min: b.start,
         duration: b.end <= b.start ? b.end + 1440 - b.start : b.end - b.start,
