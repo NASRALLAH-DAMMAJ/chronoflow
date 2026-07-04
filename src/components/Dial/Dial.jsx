@@ -9,7 +9,7 @@ function getCurrentMinutes() {
   return now.getHours() * 60 + now.getMinutes()
 }
 
-export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, placement, size = 380 }) {
+export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, placement, size = 380 }) {
   const canvasRef = useRef(null)
   const wrapperRef = useRef(null)
   const [currentTime, setCurrentTime] = useState(getCurrentMinutes())
@@ -339,4 +339,4 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
       )}
     </div>
   )
-}
+})

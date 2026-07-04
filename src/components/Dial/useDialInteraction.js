@@ -2,6 +2,8 @@ import { useRef, useCallback, useState } from 'react'
 import { SNAP_MINUTES, MINUTES_IN_DAY, HALF_DAY, DIAL } from '../../store/constants'
 import { toWorldMinute, toRenderMinute, isVisible } from './zoom-utils'
 
+const THROTTLE_MS = 16
+
 function snap(minutes) {
   return Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES
 }
@@ -118,9 +120,15 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     setTick(t => t + 1)
   }, [blocks, onSelectBlock, zoomRange, disabled])
 
+  const lastMoveTime = useRef(0)
+
   const handlePointerMove = useCallback((e) => {
     const df = dragRef.current
     if (!df) return
+
+    const now = performance.now()
+    if (now - lastMoveTime.current < THROTTLE_MS) return
+    lastMoveTime.current = now
 
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left

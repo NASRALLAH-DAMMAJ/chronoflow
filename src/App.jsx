@@ -15,10 +15,11 @@ import OfflineBanner from './components/OfflineBanner'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
-import RecurringRulesPage from './pages/RecurringRulesPage'
-import SettingsPage from './pages/SettingsPage'
-import ArchivePage from './pages/ArchivePage'
-import AnalyticsPage from './pages/AnalyticsPage'
+
+const RecurringRulesPage = React.lazy(() => import('./pages/RecurringRulesPage'))
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'))
+const ArchivePage = React.lazy(() => import('./pages/ArchivePage'))
+const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'))
 
 function AppContent() {
   const navigate = useNavigate()
@@ -316,50 +317,67 @@ function AppContent() {
   )
 }
 
+function PageSpinner() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'var(--clr-text-secondary)',
+      fontSize: 14,
+    }}>
+      Loading...
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <>
       <OfflineBanner />
-      <Routes>
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-        <Route path={ROUTES.SETTINGS} element={
-          <ProtectedRoute>
-            <ErrorBoundary name="Settings">
-              <SettingsPage />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } />
-        <Route path={ROUTES.RULES} element={
-          <ProtectedRoute>
-            <ErrorBoundary name="Recurring Rules">
-              <RecurringRulesPage />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } />
-        <Route path={ROUTES.ANALYTICS} element={
-          <ProtectedRoute>
-            <ErrorBoundary name="Analytics">
-              <AnalyticsPage />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } />
-        <Route path={ROUTES.ARCHIVE} element={
-          <ProtectedRoute>
-            <ErrorBoundary name="Archive">
-              <ArchivePage />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        } />
-        <Route path={ROUTES.HOME} element={
-          <ProtectedRoute>
-            <StoreProvider>
-              <ErrorBoundary name="Home">
-                <AppContent />
+      <React.Suspense fallback={<PageSpinner />}>
+        <Routes>
+          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+          <Route path={ROUTES.SETTINGS} element={
+            <ProtectedRoute>
+              <ErrorBoundary name="Settings">
+                <SettingsPage />
               </ErrorBoundary>
-            </StoreProvider>
-          </ProtectedRoute>
-        } />
-      </Routes>
+            </ProtectedRoute>
+          } />
+          <Route path={ROUTES.RULES} element={
+            <ProtectedRoute>
+              <ErrorBoundary name="Recurring Rules">
+                <RecurringRulesPage />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          } />
+          <Route path={ROUTES.ANALYTICS} element={
+            <ProtectedRoute>
+              <ErrorBoundary name="Analytics">
+                <AnalyticsPage />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          } />
+          <Route path={ROUTES.ARCHIVE} element={
+            <ProtectedRoute>
+              <ErrorBoundary name="Archive">
+                <ArchivePage />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          } />
+          <Route path={ROUTES.HOME} element={
+            <ProtectedRoute>
+              <StoreProvider>
+                <ErrorBoundary name="Home">
+                  <AppContent />
+                </ErrorBoundary>
+              </StoreProvider>
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </React.Suspense>
     </>
   )
 }

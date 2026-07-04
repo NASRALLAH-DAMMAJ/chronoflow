@@ -47,6 +47,7 @@ export function Button({ variant = 'primary', size = 'md', children, onClick, di
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'all 0.2s cubic-bezier(0.4,0,0.2,1)',
+        willChange: 'background-color, border-color, color, box-shadow',
         outline: 'none',
         ...variants[variant],
         ...sizes[size],

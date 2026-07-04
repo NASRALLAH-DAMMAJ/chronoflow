@@ -4,7 +4,7 @@ import { Badge } from '../design-system/components'
 import { IconClock, IconEdit, IconArchive, IconTrash } from '../design-system/icons'
 import { minutesToStr, formatDuration } from '../utils'
 
-export function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
+export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   if (blocks.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
@@ -165,4 +165,4 @@ export function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, on
       })}
     </div>
   )
-}
+})
