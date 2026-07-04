@@ -23,13 +23,16 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
     if (!label.trim()) return
 
     if (isEditing) {
-      const finalEnd = endMin <= startMin ? startMin + SNAP_MINUTES : endMin
+      let finalEnd = endMin
+      if (endMin === startMin) {
+        finalEnd = (startMin + SNAP_MINUTES) % MINUTES_IN_DAY
+      }
       onUpdateBlock(block.id, {
         start: startMin,
-        end: Math.min(finalEnd, MINUTES_IN_DAY),
+        end: finalEnd || MINUTES_IN_DAY,
         label: label.trim(),
         category,
-        is_recurring: false,
+        is_recurring: block.is_recurring || false,
       })
       if (onClose) onClose()
     } else {

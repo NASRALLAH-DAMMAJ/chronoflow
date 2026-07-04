@@ -23,7 +23,8 @@ export function StoreProvider({ children }) {
   const genRef = useRef(0)
   const userIdRef = useRef(null)
   const hasLoadedOnce = useRef(false)
-  const saveTimerRef = useRef(null)
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   useEffect(() => {
     if (!user || initFetched.current) return
@@ -52,43 +53,53 @@ export function StoreProvider({ children }) {
   }, [user, supabase, today])
 
   const saveToDb = useCallback((dateStr, blocks) => {
-    if (!user || !supabase) return
-    upsertBlocks(supabase, dateStr, blocks, user.id).catch(err => {
+    if (!user || !supabase || !dateStr) return
+    return upsertBlocks(supabase, dateStr, blocks, user.id).catch(err => {
       console.error('[Store] Failed to save blocks:', err)
     })
   }, [user, supabase])
 
   useEffect(() => {
+    return () => {
+      const s = stateRef.current
+      if (s.loaded && s.blocks.length >= 0 && user && supabase) {
+        upsertBlocks(supabase, s.dateStr, s.blocks, user.id).catch(err => {
+          console.error('[Store] Failed to save on unmount:', err)
+        })
+      }
+    }
+  }, [user, supabase])
+
+  useEffect(() => {
     if (!hasLoadedOnce.current || !user || !state.loaded) return
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => {
+    const timer = setTimeout(() => {
       saveToDb(state.dateStr, state.blocks)
     }, 300)
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    }
+    return () => clearTimeout(timer)
   }, [state.dateStr, state.blocks, user, state.loaded, saveToDb])
 
-  const goToDate = useCallback((date) => {
+  const goToDate = useCallback(async (date) => {
     const ds = getTodayStr(date)
+    const current = stateRef.current
+    if (current.loaded && current.dateStr !== ds) {
+      await saveToDb(current.dateStr, current.blocks)
+    }
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
-    ;(async () => {
+    try {
+      const blocks = await fetchSchedule(supabase, ds)
+      if (gen !== genRef.current) return
+      dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+    } catch {
       try {
-        const blocks = await fetchSchedule(supabase, ds)
+        const blocks = await fetchBlocks(supabase, ds)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch {
-        try {
-          const blocks = await fetchBlocks(supabase, ds)
-          if (gen !== genRef.current) return
-          dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-        } catch {
-          dispatch({ type: 'LOAD_BLOCKS', payload: [] })
-        }
+        dispatch({ type: 'LOAD_BLOCKS', payload: [] })
       }
-    })()
-  }, [supabase])
+    }
+  }, [supabase, saveToDb])
 
   const addBlock = useCallback((block) => {
     dispatch({ type: 'ADD_BLOCK', payload: block })
