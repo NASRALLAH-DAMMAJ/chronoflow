@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback, u
 import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, computeStreak } from './reducer'
 import { getTodayStr } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
-import { fetchBlocks, upsertBlocks, deleteBlock } from '../lib/blocks'
+import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock } from '../lib/blocks'
 import { fetchSchedule } from '../lib/schedule'
 import { migrateLocalStorage } from '../lib/migrate'
 
@@ -92,6 +92,11 @@ export function StoreProvider({ children }) {
     deleteBlock(supabase, id).catch(console.error)
   }, [supabase])
 
+  const archiveBlockAction = useCallback((id) => {
+    dispatch({ type: 'DELETE_BLOCK', payload: { id } })
+    archiveBlock(supabase, id).catch(console.error)
+  }, [supabase])
+
   const moveBlock = useCallback((id, newStart) => {
     dispatch({ type: 'MOVE_BLOCK', payload: { id, newStart } })
   }, [])
@@ -130,12 +135,13 @@ export function StoreProvider({ children }) {
     addBlock,
     updateBlock,
     deleteBlock: deleteBlockAction,
+    archiveBlock: archiveBlockAction,
     moveBlock,
     resizeBlock,
     resizeBlockStart,
     selectBlock,
     completeDay,
-  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, goToDate, addBlock, updateBlock, deleteBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, completeDay])
+  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, completeDay])
 
   return (
     <StoreContext.Provider value={value}>

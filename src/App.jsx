@@ -5,13 +5,14 @@ import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
 import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
-import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock, IconChevronLeft, IconChevronRight } from './design-system/icons'
+import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock, IconArchive, IconChevronLeft, IconChevronRight } from './design-system/icons'
 import { minutesToStr, formatDuration } from './utils'
 import { useSupabase } from './lib/SupabaseContext'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 import RecurringRulesPage from './pages/RecurringRulesPage'
 import SettingsPage from './pages/SettingsPage'
+import ArchivePage from './pages/ArchivePage'
 
 function formatDateLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -24,7 +25,7 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
+function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   if (blocks.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
@@ -149,6 +150,21 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
                   <IconEdit />
                 </button>
                 <button
+                  onClick={e => { e.stopPropagation(); onArchiveBlock(block.id) }}
+                  aria-label={`Archive ${block.label}`}
+                  style={{
+                    display: 'flex',
+                    padding: 4,
+                    border: 'none',
+                    background: 'none',
+                    color: 'var(--clr-text-tertiary)',
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                  }}
+                >
+                  <IconArchive />
+                </button>
+                <button
                   onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
                   aria-label={`Delete ${block.label}`}
                   style={{
@@ -202,7 +218,7 @@ function AppContent() {
   const navigate = useNavigate()
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
-  const { blocks, dateStr, selectedId, completedDays, loading, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, loading, streak, addBlock, updateBlock, deleteBlock, archiveBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
   const [placement, setPlacement] = useState(null)
@@ -219,6 +235,12 @@ function AppContent() {
     const block = blocks.find(b => b.id === blockId)
     if (block?.category === 'sleep') return
     deleteBlock(blockId)
+  }
+
+  function handleArchive(blockId) {
+    const block = blocks.find(b => b.id === blockId)
+    if (block?.category === 'sleep') return
+    archiveBlock(blockId)
   }
 
   function handleEdit(block) {
@@ -368,6 +390,12 @@ function AppContent() {
           <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
             {isDark ? <><IconSun /> Light</> : <><IconMoon /> Dark</>}
           </Button>
+          <Link to="/archive" style={{
+            fontSize: 12, color: 'var(--clr-text-secondary)',
+            textDecoration: 'none', padding: '4px 8px',
+          }}>
+            Archive
+          </Link>
           <Link to="/settings" style={{
             fontSize: 12, color: 'var(--clr-text-secondary)',
             textDecoration: 'none', padding: '4px 8px',
@@ -443,6 +471,7 @@ function AppContent() {
               selectedId={selectedId}
               onSelectBlock={selectBlock}
               onDeleteBlock={handleDelete}
+              onArchiveBlock={handleArchive}
               onEditBlock={handleEdit}
               contextBlockId={contextBlockId}
               onContextMenu={setContextBlockId}
@@ -487,6 +516,11 @@ export default function App() {
       <Route path="/settings/rules" element={
         <ProtectedRoute>
           <RecurringRulesPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/archive" element={
+        <ProtectedRoute>
+          <ArchivePage />
         </ProtectedRoute>
       } />
       <Route path="/" element={

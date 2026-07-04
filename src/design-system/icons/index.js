@@ -1,1 +1,1 @@
-export { IconPlus, IconX, IconCheck, IconChevronLeft, IconChevronRight, IconChevronDown, IconSearch, IconClock, IconCalendar, IconEdit, IconTrash, IconSun, IconMoon, IconSettings, IconMenu, IconArrowRight } from './Icon'
+export { IconPlus, IconX, IconCheck, IconChevronLeft, IconChevronRight, IconChevronDown, IconSearch, IconClock, IconCalendar, IconEdit, IconTrash, IconSun, IconMoon, IconSettings, IconMenu, IconArrowRight, IconArchive } from './Icon'
