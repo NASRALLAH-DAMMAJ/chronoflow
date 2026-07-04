@@ -1,12 +1,7 @@
-import { SNAP_MINUTES } from './constants'
-import { formatDate } from '../utils'
+import { MINUTES_IN_DAY, LS_KEYS, DEFAULT_CATEGORY } from './constants'
+import { formatDate, snapToGrid } from '../utils'
 
-function snapToGrid(minutes) {
-  const snap = SNAP_MINUTES
-  return Math.round(minutes / snap) * snap
-}
-
-export function createBlock({ id, start, end, label, category = 'other', tags = [], energy }) {
+export function createBlock({ id, start, end, label, category = DEFAULT_CATEGORY, tags = [], energy }) {
   return { id, start, end, label, category, tags, energy, createdAt: Date.now() }
 }
 
@@ -31,14 +26,14 @@ export function blockReducer(state, action) {
       const block = state.blocks.find(b => b.id === id)
       if (!block) return state
       const wraps = block.end <= block.start
-      const duration = wraps ? (block.end + 1440 - block.start) : (block.end - block.start)
+      const duration = wraps ? (block.end + MINUTES_IN_DAY - block.start) : (block.end - block.start)
       const snappedStart = snapToGrid(newStart)
       const newEnd = snapToGrid(snappedStart + duration)
       return {
         ...state,
         blocks: state.blocks.map(b =>
           b.id === id
-            ? { ...b, start: snappedStart % 1440, end: newEnd % 1440 || 1440 }
+            ? { ...b, start: snappedStart % MINUTES_IN_DAY, end: newEnd % MINUTES_IN_DAY || MINUTES_IN_DAY }
             : b
         ),
       }
@@ -52,7 +47,7 @@ export function blockReducer(state, action) {
         ...state,
         blocks: state.blocks.map(b =>
           b.id === id
-            ? { ...b, end: snappedEnd === b.start ? (b.start === 0 ? 1440 : b.start === 1440 ? 0 : b.end) : snappedEnd }
+            ? { ...b, end: snappedEnd === b.start ? (b.start === 0 ? MINUTES_IN_DAY : b.start === MINUTES_IN_DAY ? 0 : b.end) : snappedEnd }
             : b
         ),
       }
@@ -66,7 +61,7 @@ export function blockReducer(state, action) {
         ...state,
         blocks: state.blocks.map(b =>
           b.id === id
-            ? { ...b, start: snappedStart === b.end ? (b.end === 0 ? 1440 : b.end === 1440 ? 0 : b.start) : snappedStart }
+            ? { ...b, start: snappedStart === b.end ? (b.end === 0 ? MINUTES_IN_DAY : b.end === MINUTES_IN_DAY ? 0 : b.start) : snappedStart }
             : b
         ),
       }
@@ -107,7 +102,7 @@ export const initialState = {
 
 export function loadCompletedDays() {
   try {
-    return JSON.parse(localStorage.getItem('cf-completed') || '[]')
+    return JSON.parse(localStorage.getItem(LS_KEYS.COMPLETED) || '[]')
   } catch {
     return []
   }
@@ -115,7 +110,7 @@ export function loadCompletedDays() {
 
 export function saveCompletedDays(days) {
   try {
-    localStorage.setItem('cf-completed', JSON.stringify(days))
+    localStorage.setItem(LS_KEYS.COMPLETED, JSON.stringify(days))
   } catch {}
 }
 

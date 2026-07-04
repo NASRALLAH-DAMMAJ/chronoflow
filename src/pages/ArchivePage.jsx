@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchArchivedBlocks, restoreBlock } from '../lib/blocks'
-import { CATEGORY_COLORS } from '../store/constants'
-import { Button, Card } from '../design-system/components'
+import { CATEGORY_COLORS, ROUTES, LOCALE } from '../store/constants'
+import { Button, Card, Badge } from '../design-system/components'
 import { minutesToStr } from '../utils'
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return d.toLocaleDateString(LOCALE, { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 const CATEGORIES = Object.keys(CATEGORY_COLORS)
@@ -52,7 +52,7 @@ export default function ArchivePage() {
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: 'var(--sp-6) var(--sp-4)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate('/')} style={{
+        <button onClick={() => navigate(ROUTES.HOME)} style={{
           border: 'none', background: 'none',
           color: 'var(--clr-text-tertiary)', cursor: 'pointer', fontSize: 16, padding: 4,
         }}>←</button>
@@ -161,18 +161,5 @@ export default function ArchivePage() {
         </div>
       )}
     </div>
-  )
-}
-
-function Badge({ variant, children }) {
-  return (
-    <span style={{
-      fontSize: 11, padding: '2px 6px', borderRadius: 4,
-      backgroundColor: 'var(--clr-bg-secondary)',
-      color: 'var(--clr-text-tertiary)',
-      whiteSpace: 'nowrap',
-    }}>
-      {children}
-    </span>
   )
 }

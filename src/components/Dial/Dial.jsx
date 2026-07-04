@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { drawDial } from './DialCanvas'
 import { useDialInteraction } from './useDialInteraction'
-import { CATEGORY_COLORS } from '../../store/constants'
+import { CATEGORY_COLORS, MINUTES_IN_DAY, DIAL } from '../../store/constants'
 import { minutesToStr } from '../../utils'
 
 function getCurrentMinutes() {
@@ -85,7 +85,7 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
 
     const cx = dialSize / 2
     const cy = dialSize / 2
-    const radius = dialSize / 2 - 20
+    const radius = dialSize / 2 - DIAL.CANVAS_PADDING
 
     if (!colorsRef.current) {
       const root = document.documentElement
@@ -116,30 +116,30 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     const dy = y - cy
 
     const pointerAngle = Math.atan2(dy, dx)
-    const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+    const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
 
     const zoomFactor = e.deltaY > 0 ? 1.2 : 1 / 1.2
 
     if (!zoomRange) {
-      const newRange = Math.max(60, 1440 / zoomFactor)
+      const newRange = Math.max(60, MINUTES_IN_DAY / zoomFactor)
       const center = pointerRenderMinute
       let start = Math.max(0, center - newRange / 2)
-      let end = Math.min(1440, start + newRange)
-      if (end - start < 60) { end = Math.min(1440, start + 60) }
-      if (end >= 1440) { end = 1440; start = 1440 - Math.max(60, end - start) }
+      let end = Math.min(MINUTES_IN_DAY, start + newRange)
+      if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
+      if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
       setZoomRange({ start, end })
     } else {
       const { start, end } = zoomRange
       const range = end - start
-      const newRange = Math.max(60, Math.min(1440, range / zoomFactor))
+      const newRange = Math.max(60, Math.min(MINUTES_IN_DAY, range / zoomFactor))
 
-      const pointerWorldMinute = start + (pointerRenderMinute / 1440) * range
-      let newStart = pointerWorldMinute - (pointerRenderMinute / 1440) * newRange
+      const pointerWorldMinute = start + (pointerRenderMinute / MINUTES_IN_DAY) * range
+      let newStart = pointerWorldMinute - (pointerRenderMinute / MINUTES_IN_DAY) * newRange
       let newEnd = newStart + newRange
 
       if (newStart < 0) { newStart = 0; newEnd = newRange }
-      if (newEnd > 1440) { newEnd = 1440; newStart = 1440 - newRange }
-      if (newRange >= 1440) setZoomRange(null)
+      if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
+      if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
       else setZoomRange({ start: newStart, end: newEnd })
     }
   }, [zoomRange, placement])
@@ -169,26 +169,26 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
       const mx = (t[0].clientX + t[1].clientX) / 2 - rect.left
       const my = (t[0].clientY + t[1].clientY) / 2 - rect.top
       const pointerAngle = Math.atan2(my - cy, mx - cx)
-      const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+    const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
 
       if (!zoomRange) {
-        const newRange = Math.max(60, 1440 / scale)
+        const newRange = Math.max(60, MINUTES_IN_DAY / scale)
         const center = pointerRenderMinute
         let start = Math.max(0, center - newRange / 2)
-        let end = Math.min(1440, start + newRange)
-        if (end - start < 60) { end = Math.min(1440, start + 60) }
-        if (end >= 1440) { end = 1440; start = 1440 - Math.max(60, end - start) }
+        let end = Math.min(MINUTES_IN_DAY, start + newRange)
+        if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
+        if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
         setZoomRange({ start, end })
       } else {
         const { start, end } = zoomRange
         const range = end - start
-        const newRange = Math.max(60, Math.min(1440, range / scale))
-        const pointerWorldMinute = start + (pointerRenderMinute / 1440) * range
-        let newStart = pointerWorldMinute - (pointerRenderMinute / 1440) * newRange
+        const newRange = Math.max(60, Math.min(MINUTES_IN_DAY, range / scale))
+        const pointerWorldMinute = start + (pointerRenderMinute / MINUTES_IN_DAY) * range
+        let newStart = pointerWorldMinute - (pointerRenderMinute / MINUTES_IN_DAY) * newRange
         let newEnd = newStart + newRange
         if (newStart < 0) { newStart = 0; newEnd = newRange }
-        if (newEnd > 1440) { newEnd = 1440; newStart = 1440 - newRange }
-        if (newRange >= 1440) setZoomRange(null)
+        if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
+        if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
         else setZoomRange({ start: newStart, end: newEnd })
       }
     }
@@ -211,10 +211,10 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     const dy = y - cy
     const dist = Math.sqrt(dx * dx + dy * dy)
     const radius = Math.min(cx, cy) - 20
-    const innerR = radius * 0.55
+    const innerR = radius * DIAL.INNER_RADIUS_RATIO
     if (dist < innerR || dist > radius) return
     const angle = Math.atan2(dy, dx)
-    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
     setPlacementStart(minute)
     setPlacementPos(minute)
   }, [placement, placementStart])
@@ -230,13 +230,13 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     const dy = y - cy
     const dist = Math.sqrt(dx * dx + dy * dy)
     const radius = Math.min(cx, cy) - 20
-    const innerR = radius * 0.55
+    const innerR = radius * DIAL.INNER_RADIUS_RATIO
     if (dist < innerR || dist > radius) {
       setPlacementPos(null)
       return
     }
     const angle = Math.atan2(dy, dx)
-    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
     setPlacementPos(minute)
   }, [placement])
 
@@ -251,14 +251,14 @@ export function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeB
     const dy = y - cy
     const dist = Math.sqrt(dx * dx + dy * dy)
     const radius = Math.min(cx, cy) - 20
-    const innerR = radius * 0.55
+    const innerR = radius * DIAL.INNER_RADIUS_RATIO
     if (dist < innerR || dist > radius) {
       setPlacementStart(null)
       setPlacementPos(null)
       return
     }
     const angle = Math.atan2(dy, dx)
-    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
     onPlaceBlock(placementStart, minute)
     setPlacementStart(null)
     setPlacementPos(null)

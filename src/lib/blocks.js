@@ -1,3 +1,5 @@
+import { MINUTES_IN_DAY, TABLES } from '../store/constants'
+
 const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id'
 
 export function blockToDb(block, dateStr, userId) {
@@ -7,7 +9,7 @@ export function blockToDb(block, dateStr, userId) {
     user_id: userId,
     date: dateStr,
     start_min: block.start,
-    duration: wraps ? block.end + 1440 - block.start : block.end - block.start,
+    duration: wraps ? block.end + MINUTES_IN_DAY - block.start : block.end - block.start,
     label: block.label,
     category: block.category,
     is_recurring: block.is_recurring || false,
@@ -20,7 +22,7 @@ export function blockFromDb(row) {
   return {
     id: row.id,
     start: row.start_min,
-    end: end > 1440 ? end - 1440 : end,
+    end: end > MINUTES_IN_DAY ? end - MINUTES_IN_DAY : end,
     label: row.label,
     category: row.category,
     is_recurring: row.is_recurring || false,
@@ -30,7 +32,7 @@ export function blockFromDb(row) {
 
 export async function fetchBlocks(supabase, dateStr) {
   const { data, error } = await supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .select(DB_FIELDS)
     .eq('date', dateStr)
     .eq('archived', false)
@@ -43,7 +45,7 @@ export async function upsertBlocks(supabase, dateStr, blocks, userId) {
   if (!userId) throw new Error('userId required for upsertBlocks')
   const dbBlocks = blocks.map(b => blockToDb(b, dateStr, userId))
   const { error } = await supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .upsert(dbBlocks, { onConflict: 'id' })
 
   if (error) throw error
@@ -51,7 +53,7 @@ export async function upsertBlocks(supabase, dateStr, blocks, userId) {
 
 export async function fetchBlocksByRule(supabase, ruleId) {
   const { data, error } = await supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .select(DB_FIELDS)
     .eq('parent_rule_id', ruleId)
     .eq('archived', false)
@@ -63,7 +65,7 @@ export async function fetchBlocksByRule(supabase, ruleId) {
 
 export async function deleteBlock(supabase, id) {
   const { error } = await supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .delete()
     .eq('id', id)
 
@@ -72,7 +74,7 @@ export async function deleteBlock(supabase, id) {
 
 export async function archiveBlock(supabase, id) {
   const { error } = await supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .update({ archived: true })
     .eq('id', id)
 
@@ -81,7 +83,7 @@ export async function archiveBlock(supabase, id) {
 
 export async function restoreBlock(supabase, id) {
   const { error } = await supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .update({ archived: false })
     .eq('id', id)
 
@@ -96,7 +98,7 @@ export function archivedBlockFromDb(row) {
     id: row.id,
     date: row.date,
     start: row.start_min,
-    end: end > 1440 ? end - 1440 : end,
+    end: end > MINUTES_IN_DAY ? end - MINUTES_IN_DAY : end,
     label: row.label,
     category: row.category,
     is_recurring: row.is_recurring || false,
@@ -106,7 +108,7 @@ export function archivedBlockFromDb(row) {
 
 export async function fetchArchivedBlocks(supabase, userId, filters = {}) {
   let query = supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .select(ARCHIVED_FIELDS)
     .eq('user_id', userId)
     .eq('archived', true)

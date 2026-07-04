@@ -3,12 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchSettings, upsertSettings } from '../lib/settings'
 import { Button, Card } from '../design-system/components'
-
-function formatMinutes(m) {
-  const h = Math.floor(m / 60)
-  const min = m % 60
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
-}
+import { minutesToStr } from '../utils'
+import { ROUTES, DEFAULT_BEDTIME, DEFAULT_WAKE, SNAP_MINUTES } from '../store/constants'
 
 function parseTime(str) {
   const [h, m] = str.split(':').map(Number)
@@ -18,8 +14,8 @@ function parseTime(str) {
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { supabase, user } = useSupabase()
-  const [sleepStart, setSleepStart] = useState(1380)
-  const [sleepEnd, setSleepEnd] = useState(420)
+  const [sleepStart, setSleepStart] = useState(DEFAULT_BEDTIME)
+  const [sleepEnd, setSleepEnd] = useState(DEFAULT_WAKE)
   const [theme, setTheme] = useState('system')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -42,8 +38,8 @@ export default function SettingsPage() {
     setSaving(true)
     try {
       await upsertSettings(supabase, user.id, {
-        sleepStart: Math.round(sleepStart / 15) * 15,
-        sleepEnd: Math.round(sleepEnd / 15) * 15,
+        sleepStart: Math.round(sleepStart / SNAP_MINUTES) * SNAP_MINUTES,
+        sleepEnd: Math.round(sleepEnd / SNAP_MINUTES) * SNAP_MINUTES,
         theme,
       })
       setSaved(true)
@@ -65,7 +61,7 @@ export default function SettingsPage() {
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: 'var(--sp-6) var(--sp-4)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate('/')} style={{
+        <button onClick={() => navigate(ROUTES.HOME)} style={{
           border: 'none', background: 'none',
           color: 'var(--clr-text-tertiary)', cursor: 'pointer', fontSize: 16, padding: 4,
         }}>←</button>
@@ -83,7 +79,7 @@ export default function SettingsPage() {
             <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginBottom: 4 }}>Bedtime</div>
             <input
               type="time"
-              value={formatMinutes(sleepStart)}
+              value={minutesToStr(sleepStart)}
               onChange={e => setSleepStart(parseTime(e.target.value))}
               style={{
                 padding: '6px 10px',
@@ -100,7 +96,7 @@ export default function SettingsPage() {
             <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginBottom: 4 }}>Wake up</div>
             <input
               type="time"
-              value={formatMinutes(sleepEnd)}
+              value={minutesToStr(sleepEnd)}
               onChange={e => setSleepEnd(parseTime(e.target.value))}
               style={{
                 padding: '6px 10px',
@@ -173,7 +169,7 @@ export default function SettingsPage() {
               Manage blocks that repeat on certain days
             </div>
           </div>
-          <Link to="/settings/rules" style={{
+          <Link to={ROUTES.RULES} style={{
             fontSize: 13, color: 'var(--clr-primary)',
             textDecoration: 'none', fontWeight: 500,
           }}>

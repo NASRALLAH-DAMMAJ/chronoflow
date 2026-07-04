@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../../design-system/components'
-import { BLOCK_CATEGORIES } from '../../store/constants'
+import { BLOCK_CATEGORIES, MINUTES_IN_DAY, SNAP_MINUTES, DEFAULT_BLOCK_CATEGORY } from '../../store/constants'
 import { TimeBar } from './TimeBar'
 
 export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
@@ -8,7 +8,7 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
   const [label, setLabel] = useState(block ? block.label : '')
   const [startMin, setStartMin] = useState(block ? block.start : 540)
   const [endMin, setEndMin] = useState(block ? block.end : 600)
-  const [category, setCategory] = useState(block ? block.category : 'work')
+  const [category, setCategory] = useState(block ? block.category : DEFAULT_BLOCK_CATEGORY)
 
   useEffect(() => {
     function onKey(e) {
@@ -23,10 +23,10 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
     if (!label.trim()) return
 
     if (isEditing) {
-      const finalEnd = endMin <= startMin ? startMin + 15 : endMin
+      const finalEnd = endMin <= startMin ? startMin + SNAP_MINUTES : endMin
       onUpdateBlock(block.id, {
         start: startMin,
-        end: Math.min(finalEnd, 1440),
+        end: Math.min(finalEnd, MINUTES_IN_DAY),
         label: label.trim(),
         category,
         is_recurring: false,
@@ -37,7 +37,7 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
     }
   }
 
-  const duration = endMin > startMin ? endMin - startMin : 1440 - startMin + endMin
+  const duration = endMin > startMin ? endMin - startMin : MINUTES_IN_DAY - startMin + endMin
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -70,7 +70,7 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
             Duration
           </label>
           <TimeBar duration={duration} onChange={(newDur) => {
-            const newEnd = (startMin + newDur) % 1440
+            const newEnd = (startMin + newDur) % MINUTES_IN_DAY
             setEndMin(newEnd)
           }} />
         </div>

@@ -1,5 +1,5 @@
 import { useRef, useCallback, useState } from 'react'
-import { SNAP_MINUTES } from '../../store/constants'
+import { SNAP_MINUTES, MINUTES_IN_DAY, HALF_DAY, DIAL } from '../../store/constants'
 import { toWorldMinute, toRenderMinute, isVisible } from './zoom-utils'
 
 function snap(minutes) {
@@ -7,7 +7,7 @@ function snap(minutes) {
 }
 
 function angleToMinutes(angle) {
-  return (((angle + Math.PI / 2) / (2 * Math.PI)) * 1440 + 1440) % 1440
+  return (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
 }
 
 function angleDiff(a1, a2) {
@@ -38,7 +38,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
 
     let bestEdgeHit = null
     let minEdgeDiff = Infinity
-    const edgeThreshold = 0.12
+    const edgeThreshold = DIAL.EDGE_THRESHOLD
 
     const actionable = blocks.filter(b => b.category !== 'sleep')
 
@@ -48,7 +48,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
 
       if (isVisible(start, zoomRange)) {
         const renderStart = toRenderMinute(start, zoomRange)
-        const startAngle = (renderStart / 1440) * 2 * Math.PI - Math.PI / 2
+        const startAngle = (renderStart / MINUTES_IN_DAY) * 2 * Math.PI - Math.PI / 2
         const diff = angleDiff(pointerAngle, startAngle)
         if (diff < edgeThreshold && diff < minEdgeDiff) {
           minEdgeDiff = diff
@@ -58,7 +58,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
 
       if (isVisible(end, zoomRange)) {
         const renderEnd = toRenderMinute(end, zoomRange)
-        const endAngle = (renderEnd / 1440) * 2 * Math.PI - Math.PI / 2
+        const endAngle = (renderEnd / MINUTES_IN_DAY) * 2 * Math.PI - Math.PI / 2
         const diff = angleDiff(pointerAngle, endAngle)
         if (diff < edgeThreshold && diff < minEdgeDiff) {
           minEdgeDiff = diff
@@ -95,8 +95,8 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     const y = e.clientY - rect.top
     const cx = rect.width / 2
     const cy = rect.height / 2
-    const radius = Math.min(cx, cy) - 20
-    const innerR = radius * 0.55
+    const radius = Math.min(cx, cy) - DIAL.CANVAS_PADDING
+    const innerR = radius * DIAL.INNER_RADIUS_RATIO
     const outerR = radius
 
     const hit = getBlockHit(x, y, cx, cy, innerR, outerR)
@@ -134,8 +134,8 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
 
     const wm = pointerToWorldMinutes(x, y, cx, cy)
     let cw = wm
-    if (continuousWm - wm > 720) cw = wm + 1440
-    else if (wm - continuousWm > 720) cw = wm - 1440
+    if (continuousWm - wm > HALF_DAY) cw = wm + MINUTES_IN_DAY
+    else if (wm - continuousWm > HALF_DAY) cw = wm - MINUTES_IN_DAY
     df.continuousWm = cw
 
     const snapped = snap(cw)
@@ -143,21 +143,21 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     let g = null
     if (edge === 'body') {
       const wraps = block.end <= block.start
-      const duration = wraps ? (block.end + 1440 - block.start) : (block.end - block.start)
+      const duration = wraps ? (block.end + MINUTES_IN_DAY - block.start) : (block.end - block.start)
       let newStart = snapped - offset
-      const displayStart = ((newStart % 1440) + 1440) % 1440
-      g = { ...block, start: Math.round(displayStart), end: Math.round(((displayStart + duration) % 1440 + 1440) % 1440 || 1440) }
+      const displayStart = ((newStart % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY
+      g = { ...block, start: Math.round(displayStart), end: Math.round(((displayStart + duration) % MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY || MINUTES_IN_DAY) }
     } else if (edge === 'end') {
-      const displayEnd = ((snapped % 1440) + 1440) % 1440 || 1440
+      const displayEnd = ((snapped % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY || MINUTES_IN_DAY
       if (displayEnd === block.start) {
-        g = { ...block, end: Math.round(block.start + SNAP_MINUTES > 1440 ? SNAP_MINUTES : block.start + SNAP_MINUTES) }
+        g = { ...block, end: Math.round(block.start + SNAP_MINUTES > MINUTES_IN_DAY ? SNAP_MINUTES : block.start + SNAP_MINUTES) }
       } else {
         g = { ...block, end: Math.round(displayEnd) }
       }
     } else if (edge === 'start') {
-      const displayStart = ((snapped % 1440) + 1440) % 1440
+      const displayStart = ((snapped % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY
       if (displayStart === block.end) {
-        g = { ...block, start: Math.round(block.end - SNAP_MINUTES < 0 ? block.end + 1440 - SNAP_MINUTES : block.end - SNAP_MINUTES) }
+        g = { ...block, start: Math.round(block.end - SNAP_MINUTES < 0 ? block.end + MINUTES_IN_DAY - SNAP_MINUTES : block.end - SNAP_MINUTES) }
       } else {
         g = { ...block, start: Math.round(displayStart) }
       }

@@ -1,12 +1,14 @@
+import { TABLES, SUPABASE_ERROR_NO_ROWS } from '../store/constants'
+
 export async function fetchSettings(supabase, userId) {
   const { data, error } = await supabase
-    .from('settings')
+    .from(TABLES.SETTINGS)
     .select('sleep_start, sleep_end, theme, timezone')
     .eq('user_id', userId)
     .single()
 
   if (error) {
-    if (error.code === 'PGRST116') return null
+    if (error.code === SUPABASE_ERROR_NO_ROWS) return null
     throw error
   }
   return data
@@ -21,7 +23,7 @@ export async function upsertSettings(supabase, userId, settings) {
     timezone: settings.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
   }
   const { error } = await supabase
-    .from('settings')
+    .from(TABLES.SETTINGS)
     .upsert(payload, { onConflict: 'user_id' })
 
   if (error) throw error

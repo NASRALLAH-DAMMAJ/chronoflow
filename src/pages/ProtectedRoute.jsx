@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
+import { ROUTES } from '../store/constants'
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useSupabase()
@@ -21,7 +22,7 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to={ROUTES.LOGIN} replace />
   }
 
   return children

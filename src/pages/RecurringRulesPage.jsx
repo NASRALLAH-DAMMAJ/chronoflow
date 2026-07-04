@@ -3,25 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchRules, addRule, updateRule, deleteRule } from '../lib/recurringRules'
 import { fetchBlocksByRule, deleteBlock } from '../lib/blocks'
-import { CATEGORY_COLORS } from '../store/constants'
+import { CATEGORY_COLORS, ROUTES, DEFAULT_CATEGORY, DEFAULT_RULE_START, DEFAULT_RULE_DURATION, SNAP_MINUTES } from '../store/constants'
 import { Button, Card, Modal } from '../design-system/components'
+import { minutesToStr } from '../utils'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-function formatMinutes(m) {
-  const h = Math.floor(m / 60)
-  const min = m % 60
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
-}
 
 function emptyRule() {
   return {
     id: crypto.randomUUID(),
     daysOfWeek: [],
-    startMin: 480,
-    duration: 60,
+    startMin: DEFAULT_RULE_START,
+    duration: DEFAULT_RULE_DURATION,
     label: '',
-    category: 'other',
+    category: DEFAULT_CATEGORY,
     activeUntil: null,
   }
 }
@@ -110,7 +105,7 @@ export default function RecurringRulesPage() {
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: 'var(--sp-6) var(--sp-4)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate('/')} style={{
+        <button onClick={() => navigate(ROUTES.HOME)} style={{
           border: 'none', background: 'none',
           color: 'var(--clr-text-tertiary)', cursor: 'pointer', fontSize: 16, padding: 4,
         }}>←</button>
@@ -174,7 +169,7 @@ export default function RecurringRulesPage() {
                 <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginBottom: 4 }}>Start</div>
                 <input
                   type="time"
-                  value={formatMinutes(editing.startMin)}
+                  value={minutesToStr(editing.startMin)}
                   onChange={e => {
                     const [h, m] = e.target.value.split(':').map(Number)
                     setEditing(prev => ({ ...prev, startMin: h * 60 + m }))
@@ -194,10 +189,10 @@ export default function RecurringRulesPage() {
                 <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginBottom: 4 }}>Duration (min)</div>
                 <input
                   type="number"
-                  min={15}
-                  step={15}
+                  min={SNAP_MINUTES}
+                  step={SNAP_MINUTES}
                   value={editing.duration}
-                  onChange={e => setEditing(prev => ({ ...prev, duration: Math.max(15, Number(e.target.value)) }))}
+                  onChange={e => setEditing(prev => ({ ...prev, duration: Math.max(SNAP_MINUTES, Number(e.target.value)) }))}
                   style={{
                     padding: '6px 10px',
                     fontSize: 13,
@@ -258,7 +253,7 @@ export default function RecurringRulesPage() {
                   {rule.label}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)' }}>
-                  {rule.daysOfWeek.map(i => DAY_NAMES[i]).join(', ')} · {formatMinutes(rule.startMin)} ({rule.duration}m)
+                  {rule.daysOfWeek.map(i => DAY_NAMES[i]).join(', ')} · {minutesToStr(rule.startMin)} ({rule.duration}m)
                 </div>
               </div>
               <button

@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchBlocksForRange, fetchSettingsForRange } from '../lib/analytics'
-import { CATEGORY_COLORS } from '../store/constants'
+import { CATEGORY_COLORS, ROUTES, LOCALE, HALF_DAY, MINUTES_IN_DAY, SLEEP_CATEGORY, BRAND_COLOR, NO_CATEGORY } from '../store/constants'
 import { Card } from '../design-system/components'
+import { minutesToStr } from '../utils'
 import { pdf } from '@react-pdf/renderer'
 import ReportPDF from './ReportPDF'
 import VisualPDF from './VisualPDF'
@@ -14,19 +15,13 @@ import {
 
 function formatDateStr(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-function formatMinutesToTime(m) {
-  const h = Math.floor(((m % 1440) + 1440) % 1440 / 60)
-  const min = ((m % 1440) + 1440) % 1440 % 60
-  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+  return d.toLocaleDateString(LOCALE, { month: 'short', day: 'numeric' })
 }
 
 function circularDiff(actual, target) {
   let diff = actual - target
-  if (diff > 720) diff -= 1440
-  if (diff < -720) diff += 1440
+  if (diff > HALF_DAY) diff -= MINUTES_IN_DAY
+  if (diff < -HALF_DAY) diff += MINUTES_IN_DAY
   return diff
 }
 
@@ -114,13 +109,13 @@ export default function AnalyticsPage() {
 
   const sleepData = useMemo(() => {
     if (!settings) return null
-    const sleepBlocks = blocks.filter(b => b.category === 'sleep')
+    const sleepBlocks = blocks.filter(b => b.category === SLEEP_CATEGORY)
     if (sleepBlocks.length === 0) return null
     let bedtimeDevSum = 0
     let wakeDevSum = 0
     for (const block of sleepBlocks) {
       const bedtime = block.start_min
-      const wake = (block.start_min + block.duration) % 1440
+      const wake = (block.start_min + block.duration) % MINUTES_IN_DAY
       bedtimeDevSum += Math.abs(circularDiff(bedtime, settings.sleep_start))
       wakeDevSum += Math.abs(circularDiff(wake, settings.sleep_end))
     }
@@ -140,7 +135,7 @@ export default function AnalyticsPage() {
     for (const block of blocks) {
       catHours[block.category] = (catHours[block.category] || 0) + block.duration / 60
     }
-    let topCategory = 'none'
+    let topCategory = NO_CATEGORY
     let topHours = 0
     for (const [cat, hrs] of Object.entries(catHours)) {
       if (hrs > topHours) {
@@ -179,7 +174,7 @@ export default function AnalyticsPage() {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 'var(--sp-6) var(--sp-4)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate('/')} style={{
+        <button onClick={() => navigate(ROUTES.HOME)} style={{
           border: 'none', background: 'none',
           color: 'var(--clr-text-tertiary)', cursor: 'pointer', fontSize: 16, padding: 4,
         }}>←</button>
@@ -226,7 +221,7 @@ export default function AnalyticsPage() {
             <button onClick={() => handleDownload(ReportPDF)} style={{
               padding: '5px 12px', fontSize: 12, fontWeight: 600,
               fontFamily: 'var(--ff-body)',
-              color: '#fff', backgroundColor: '#6366F1',
+              color: '#fff', backgroundColor: BRAND_COLOR,
               border: 'none', borderRadius: 6, cursor: 'pointer',
             }}>
               Download Report
@@ -234,8 +229,8 @@ export default function AnalyticsPage() {
             <button onClick={() => handleDownload(VisualPDF)} style={{
               padding: '5px 12px', fontSize: 12, fontWeight: 600,
               fontFamily: 'var(--ff-body)',
-              color: '#6366F1', backgroundColor: 'transparent',
-              border: '2px solid #6366F1', borderRadius: 6, cursor: 'pointer',
+              color: BRAND_COLOR, backgroundColor: 'transparent',
+              border: `2px solid ${BRAND_COLOR}`, borderRadius: 6, cursor: 'pointer',
             }}>
               Download Visual
             </button>
@@ -327,7 +322,7 @@ export default function AnalyticsPage() {
             Sleep Consistency
           </h2>
           <div style={{ fontSize: 13, color: 'var(--clr-text-secondary)', marginBottom: 12 }}>
-            Target: bed at {formatMinutesToTime(settings.sleep_start)} · wake at {formatMinutesToTime(settings.sleep_end)}
+            Target: bed at {minutesToStr(settings.sleep_start)} · wake at {minutesToStr(settings.sleep_end)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ padding: 12, backgroundColor: 'var(--clr-bg-secondary)', borderRadius: 8, textAlign: 'center' }}>

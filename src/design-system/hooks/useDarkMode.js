@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import { LS_KEYS } from '../../store/constants'
 
 function getStoredTheme() {
   try {
-    return localStorage.getItem('cf-theme')
+    return localStorage.getItem(LS_KEYS.THEME)
   } catch {
     return null
   }
@@ -10,7 +11,7 @@ function getStoredTheme() {
 
 function setStoredTheme(value) {
   try {
-    localStorage.setItem('cf-theme', value)
+    localStorage.setItem(LS_KEYS.THEME, value)
   } catch {}
 }
 

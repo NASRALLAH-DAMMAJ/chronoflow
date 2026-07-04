@@ -1,219 +1,22 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Routes, Route, Link, useNavigate } from 'react-router-dom'
-import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS } from './store'
+import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS, ROUTES, LS_KEYS, SLEEP_CATEGORY, MINUTES_IN_DAY, SNAP_MINUTES } from './store'
 import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
+import { BlockList } from './components/BlockList'
+import { Onboarding } from './components/Onboarding'
 import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
-import { IconPlus, IconSun, IconMoon, IconTrash, IconEdit, IconClock, IconArchive, IconChevronLeft, IconChevronRight } from './design-system/icons'
-import { minutesToStr, formatDuration } from './utils'
+import { IconPlus, IconSun, IconMoon, IconChevronLeft, IconChevronRight } from './design-system/icons'
+import { minutesToStr, formatDateLabel, snapToGrid } from './utils'
 import { useSupabase } from './lib/SupabaseContext'
+import ErrorBoundary from './components/ErrorBoundary'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 import RecurringRulesPage from './pages/RecurringRulesPage'
 import SettingsPage from './pages/SettingsPage'
 import ArchivePage from './pages/ArchivePage'
 import AnalyticsPage from './pages/AnalyticsPage'
-
-function formatDateLabel(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  const today = new Date()
-  const isToday = dateStr === getTodayStr()
-  if (isToday) return 'Today'
-  const diff = Math.round((today - d) / 86400000)
-  if (diff === 1) return 'Yesterday'
-  if (diff === -1) return 'Tomorrow'
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
-  if (blocks.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
-        <div style={{ marginBottom: 12, opacity: 0.4 }}>
-          <IconClock />
-        </div>
-        <p style={{ fontSize: 14, marginBottom: 4 }}>
-          No blocks yet
-        </p>
-        <p style={{ fontSize: 13 }}>
-          Tap <strong>Add</strong> to plan your day
-        </p>
-      </div>
-    )
-  }
-
-  const sorted = [...blocks].sort((a, b) => a.start - b.start)
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 400, overflowY: 'auto', paddingRight: 4 }}>
-      {sorted.map(block => {
-        const isSelected = block.id === selectedId
-        const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
-        return (
-            <div
-              key={block.id}
-              onClick={() => onSelectBlock(block.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectBlock(block.id) } }}
-              tabIndex={0}
-              role="button"
-              aria-pressed={isSelected}
-              style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '8px 12px',
-              borderRadius: 6,
-              backgroundColor: isSelected ? 'var(--clr-bg-secondary)' : 'transparent',
-              border: `2px solid ${isSelected ? color : 'transparent'}`,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <div style={{ width: 4, height: 32, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {block.label}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)' }}>
-                {minutesToStr(block.start)} – {minutesToStr(block.end)} · {formatDuration(block.end <= block.start ? block.end + 1440 - block.start : block.end - block.start)}
-              </div>
-            </div>
-            <Badge variant="default">{block.category}</Badge>
-            {block.category === 'sleep' ? (
-              <div style={{
-                fontSize: 11, color: 'var(--clr-text-tertiary)',
-                padding: '4px 6px', whiteSpace: 'nowrap',
-              }}>
-                Locked
-              </div>
-            ) : (
-              <>
-                {block.is_recurring && (
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); onContextMenu(block.id) }}
-                      aria-label="More options"
-                      style={{
-                        display: 'flex', padding: 4, border: 'none', background: 'none',
-                        color: 'var(--clr-text-tertiary)', cursor: 'pointer', borderRadius: 4,
-                        fontSize: 16, lineHeight: 1,
-                      }}
-                    >
-                      ⋮
-                    </button>
-                    {contextBlockId === block.id && (
-                      <div ref={contextRef} style={{
-                        position: 'absolute', right: 0, top: '100%', zIndex: 50,
-                        minWidth: 140, padding: 4,
-                        background: 'var(--clr-surface-elevated)',
-                        border: '1px solid var(--clr-border)',
-                        borderRadius: 8,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                      }}>
-                        {[
-                          { label: 'Edit this day', action: () => { onEditBlock(block); onContextMenu(null) } },
-                          { label: 'Edit rule', action: () => { onContextMenu(null); onEditRule && onEditRule() } },
-                          { label: 'Skip', action: () => { onDeleteBlock(block.id); onContextMenu(null) } },
-                        ].map(item => (
-                          <button
-                            key={item.label}
-                            onClick={e => { e.stopPropagation(); item.action() }}
-                            style={{
-                              display: 'block', width: '100%', padding: '6px 10px',
-                              border: 'none', background: 'none', cursor: 'pointer',
-                              fontSize: 13, textAlign: 'left', color: 'var(--clr-text)',
-                              borderRadius: 4,
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <button
-                  onClick={e => { e.stopPropagation(); onEditBlock(block) }}
-                  aria-label={`Edit ${block.label}`}
-                  style={{
-                    display: 'flex',
-                    padding: 4,
-                    border: 'none',
-                    background: 'none',
-                    color: 'var(--clr-text-tertiary)',
-                    cursor: 'pointer',
-                    borderRadius: 4,
-                  }}
-                >
-                  <IconEdit />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); onArchiveBlock(block.id) }}
-                  aria-label={`Archive ${block.label}`}
-                  style={{
-                    display: 'flex',
-                    padding: 4,
-                    border: 'none',
-                    background: 'none',
-                    color: 'var(--clr-text-tertiary)',
-                    cursor: 'pointer',
-                    borderRadius: 4,
-                  }}
-                >
-                  <IconArchive />
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
-                  aria-label={`Delete ${block.label}`}
-                  style={{
-                    display: 'flex',
-                    padding: 4,
-                    border: 'none',
-                    background: 'none',
-                    color: 'var(--clr-text-tertiary)',
-                    cursor: 'pointer',
-                    borderRadius: 4,
-                  }}
-                >
-                  <IconTrash />
-                </button>
-              </>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function Onboarding({ onDismiss }) {
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'var(--clr-overlay)',
-    }}>
-      <Card padding="var(--sp-6)" style={{ maxWidth: 400, textAlign: 'center' }}>
-        <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 700, marginBottom: 12, color: 'var(--clr-text)' }}>
-          Welcome to ChronoFlow
-        </h2>
-        <p style={{ fontSize: 14, color: 'var(--clr-text-secondary)', lineHeight: 1.6, marginBottom: 8 }}>
-          See where your time actually goes.
-        </p>
-        <ul style={{ fontSize: 13, color: 'var(--clr-text-secondary)', lineHeight: 2, listStyle: 'none', padding: 0, margin: '16px 0' }}>
-          <li>1. Tap <strong>Add</strong> to plan a block of time</li>
-          <li>2. Drag on the dial to set start and end</li>
-          <li>3. Drag blocks to move, drag edges to resize</li>
-          <li>4. Complete your day at night</li>
-        </ul>
-        <Button variant="primary" onClick={onDismiss}>Get started</Button>
-      </Card>
-    </div>
-  )
-}
 
 function AppContent() {
   const navigate = useNavigate()
@@ -224,23 +27,23 @@ function AppContent() {
   const [editingBlock, setEditingBlock] = useState(null)
   const [placement, setPlacement] = useState(null)
   const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return !localStorage.getItem('cf-onboarded') } catch { return true }
+    try { return !localStorage.getItem(LS_KEYS.ONBOARDED) } catch { return true }
   })
 
   function dismissOnboarding() {
-    try { localStorage.setItem('cf-onboarded', '1') } catch {}
+    try { localStorage.setItem(LS_KEYS.ONBOARDED, '1') } catch {}
     setShowOnboarding(false)
   }
 
   function handleDelete(blockId) {
     const block = blocks.find(b => b.id === blockId)
-    if (block?.category === 'sleep') return
+    if (block?.category === SLEEP_CATEGORY) return
     deleteBlock(blockId)
   }
 
   function handleArchive(blockId) {
     const block = blocks.find(b => b.id === blockId)
-    if (block?.category === 'sleep') return
+    if (block?.category === SLEEP_CATEGORY) return
     archiveBlock(blockId)
   }
 
@@ -261,14 +64,14 @@ function AppContent() {
   }
 
   function handlePlaceOnDial(startMin, endMin) {
-    const a = Math.round(startMin / 15) * 15
-    const b = Math.round(endMin / 15) * 15
+    const a = snapToGrid(startMin, SNAP_MINUTES)
+    const b = snapToGrid(endMin, SNAP_MINUTES)
     let start, end
     if (b >= a) {
       start = a
       end = b
     } else {
-      const wrap = b + 1440 - a
+      const wrap = b + MINUTES_IN_DAY - a
       const direct = a - b
       if (wrap <= direct) {
         start = a
@@ -278,11 +81,11 @@ function AppContent() {
         end = a
       }
     }
-    if (end === start) end = start + 15
-    end = Math.min(end, 1440)
+    if (end === start) end = start + SNAP_MINUTES
+    end = Math.min(end, MINUTES_IN_DAY)
     addBlock({
       id: crypto.randomUUID(),
-      start: start % 1440,
+      start: start % MINUTES_IN_DAY,
       end,
       label: placement.label,
       category: placement.category,
@@ -391,19 +194,19 @@ function AppContent() {
           <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
             {isDark ? <><IconSun /> Light</> : <><IconMoon /> Dark</>}
           </Button>
-          <Link to="/analytics" style={{
+          <Link to={ROUTES.ANALYTICS} style={{
             fontSize: 12, color: 'var(--clr-text-secondary)',
             textDecoration: 'none', padding: '4px 8px',
           }}>
             Analytics
           </Link>
-          <Link to="/archive" style={{
+          <Link to={ROUTES.ARCHIVE} style={{
             fontSize: 12, color: 'var(--clr-text-secondary)',
             textDecoration: 'none', padding: '4px 8px',
           }}>
             Archive
           </Link>
-          <Link to="/settings" style={{
+          <Link to={ROUTES.SETTINGS} style={{
             fontSize: 12, color: 'var(--clr-text-secondary)',
             textDecoration: 'none', padding: '4px 8px',
           }}>
@@ -483,7 +286,7 @@ function AppContent() {
               contextBlockId={contextBlockId}
               onContextMenu={setContextBlockId}
               contextRef={contextRef}
-              onEditRule={() => navigate('/settings/rules')}
+              onEditRule={() => navigate(ROUTES.RULES)}
             />
 
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -514,31 +317,41 @@ function AppContent() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/settings" element={
+      <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+      <Route path={ROUTES.SETTINGS} element={
         <ProtectedRoute>
-          <SettingsPage />
+          <ErrorBoundary name="Settings">
+            <SettingsPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
-      <Route path="/settings/rules" element={
+      <Route path={ROUTES.RULES} element={
         <ProtectedRoute>
-          <RecurringRulesPage />
+          <ErrorBoundary name="Recurring Rules">
+            <RecurringRulesPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
-      <Route path="/analytics" element={
+      <Route path={ROUTES.ANALYTICS} element={
         <ProtectedRoute>
-          <AnalyticsPage />
+          <ErrorBoundary name="Analytics">
+            <AnalyticsPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
-      <Route path="/archive" element={
+      <Route path={ROUTES.ARCHIVE} element={
         <ProtectedRoute>
-          <ArchivePage />
+          <ErrorBoundary name="Archive">
+            <ArchivePage />
+          </ErrorBoundary>
         </ProtectedRoute>
       } />
-      <Route path="/" element={
+      <Route path={ROUTES.HOME} element={
         <ProtectedRoute>
           <StoreProvider>
-            <AppContent />
+            <ErrorBoundary name="Home">
+              <AppContent />
+            </ErrorBoundary>
           </StoreProvider>
         </ProtectedRoute>
       } />

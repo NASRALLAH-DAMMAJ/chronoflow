@@ -1,6 +1,8 @@
+import { TABLES, SUPABASE_ERROR_NO_ROWS } from '../store/constants'
+
 export async function fetchBlocksForRange(supabase, userId, dateFrom, dateTo) {
   const { data, error } = await supabase
-    .from('blocks')
+    .from(TABLES.BLOCKS)
     .select('id, date, start_min, duration, label, category, is_recurring')
     .eq('user_id', userId)
     .eq('archived', false)
@@ -15,13 +17,13 @@ export async function fetchBlocksForRange(supabase, userId, dateFrom, dateTo) {
 
 export async function fetchSettingsForRange(supabase, userId, _dateFrom, _dateTo) {
   const { data, error } = await supabase
-    .from('settings')
+    .from(TABLES.SETTINGS)
     .select('sleep_start, sleep_end')
     .eq('user_id', userId)
     .single()
 
   if (error) {
-    if (error.code === 'PGRST116') return null
+    if (error.code === SUPABASE_ERROR_NO_ROWS) return null
     throw error
   }
   return data

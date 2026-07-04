@@ -1,3 +1,5 @@
+import { TABLES } from '../store/constants'
+
 const RULES_FIELDS = 'id,days_of_week,start_min,duration,label,category,active_until'
 
 function ruleFromDb(row) {
@@ -27,7 +29,7 @@ function ruleToDb(rule, userId) {
 
 export async function fetchRules(supabase) {
   const { data, error } = await supabase
-    .from('recurring_rules')
+    .from(TABLES.RULES)
     .select(RULES_FIELDS)
 
   if (error) throw error
@@ -38,7 +40,7 @@ export async function addRule(supabase, rule, userId) {
   if (!userId) throw new Error('userId required for addRule')
   const dbRule = ruleToDb(rule, userId)
   const { error } = await supabase
-    .from('recurring_rules')
+    .from(TABLES.RULES)
     .insert(dbRule)
 
   if (error) throw error
@@ -54,7 +56,7 @@ export async function updateRule(supabase, id, changes) {
   if (changes.activeUntil !== undefined) updates.active_until = changes.activeUntil || null
 
   const { error } = await supabase
-    .from('recurring_rules')
+    .from(TABLES.RULES)
     .update(updates)
     .eq('id', id)
 
@@ -63,7 +65,7 @@ export async function updateRule(supabase, id, changes) {
 
 export async function deleteRule(supabase, id) {
   const { error } = await supabase
-    .from('recurring_rules')
+    .from(TABLES.RULES)
     .delete()
     .eq('id', id)
 
