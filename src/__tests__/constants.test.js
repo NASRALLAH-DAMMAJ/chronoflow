@@ -26,8 +26,8 @@ describe('CATEGORY_COLORS', () => {
 })
 
 describe('SNAP_MINUTES', () => {
-  it('is 15', () => {
-    expect(SNAP_MINUTES).toBe(15)
+  it('is 5', () => {
+    expect(SNAP_MINUTES).toBe(5)
   })
 })
 

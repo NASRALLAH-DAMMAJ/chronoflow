@@ -124,28 +124,13 @@ function AppContent() {
 
   const formOpen = showForm || editingBlock
 
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--clr-bg)',
-        color: 'var(--clr-text-secondary)',
-        fontSize: 14,
-      }}>
-        Loading...
-      </div>
-    )
-  }
-
   return (
     <>
       {showOnboarding && <Onboarding onDismiss={dismissOnboarding} />}
       <div
         id="main-content"
         tabIndex={-1}
+        className="animate-fade-in"
         style={{
           maxWidth: 1000,
           margin: '0 auto',
@@ -155,7 +140,7 @@ function AppContent() {
           flexDirection: 'column',
         }}
       >
-      <header style={{
+      <header className="animate-fade-in-up" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -225,16 +210,17 @@ function AppContent() {
         </div>
       </header>
 
-      <div className="app-grid" style={{
+      <div className="app-grid animate-fade-in-up" style={{
         display: 'grid',
         gridTemplateColumns: '1fr 340px',
         gap: 'var(--sp-6)',
         alignItems: 'start',
         flex: 1,
+        animationDelay: '0.1s',
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div className="animate-fade-in-scale" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           {placement && (
-            <div style={{
+            <div className="animate-slide-down" style={{
               fontSize: 13, color: 'var(--clr-text-secondary)',
               backgroundColor: 'var(--clr-surface)',
               padding: '6px 14px', borderRadius: 6,
@@ -261,7 +247,7 @@ function AppContent() {
           />
         </div>
 
-        <div>
+        <div className="animate-slide-in-right" style={{ animationDelay: '0.15s' }}>
           <Card padding="var(--sp-4)">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 600, color: 'var(--clr-text)', margin: 0 }}>
@@ -273,7 +259,7 @@ function AppContent() {
             </div>
 
             {formOpen && (
-              <div style={{ marginBottom: 16 }}>
+              <div className="animate-slide-down" style={{ marginBottom: 16 }}>
                 <BlockForm
                   block={editingBlock}
                   onUpdateBlock={updateBlock}

@@ -7,7 +7,7 @@ import { minutesToStr, formatDuration } from '../utils'
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   if (blocks.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
+      <div className="animate-fade-in" style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
         <div style={{ marginBottom: 12, opacity: 0.4 }}>
           <IconClock />
         </div>
@@ -25,18 +25,20 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 400, overflowY: 'auto', paddingRight: 4 }}>
-      {sorted.map(block => {
+      {sorted.map((block, index) => {
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
         return (
             <div
               key={block.id}
+              className="hover-lift transition-all"
               onClick={() => onSelectBlock(block.id)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectBlock(block.id) } }}
               tabIndex={0}
               role="button"
               aria-pressed={isSelected}
               style={{
+              animation: `fadeInUp 0.2s ease-out ${index * 0.03}s both`,
               display: 'flex',
               alignItems: 'center',
               gap: 10,

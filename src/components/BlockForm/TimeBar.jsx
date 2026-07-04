@@ -71,7 +71,7 @@ export function TimeBar({ duration, onChange }) {
         onPointerDown={handlePointerDown}
         role="slider"
         aria-label="Block duration"
-        aria-valuemin={15}
+        aria-valuemin={SNAP_MINUTES}
         aria-valuemax={1440}
         aria-valuenow={dur}
         aria-valuetext={durationStr}
