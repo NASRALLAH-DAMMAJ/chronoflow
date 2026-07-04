@@ -51,7 +51,7 @@ export function StoreProvider({ children }) {
   }, [user, supabase, today])
 
   useEffect(() => {
-    if (!hasLoadedOnce.current || !user) return
+    if (!hasLoadedOnce.current || !user || !state.loaded) return
     const timer = setTimeout(() => {
       upsertBlocks(supabase, state.dateStr, state.blocks, user.id).catch(console.error)
     }, 500)

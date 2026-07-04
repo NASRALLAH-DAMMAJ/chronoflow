@@ -72,7 +72,7 @@ export function blockReducer(state, action) {
       }
     }
     case 'SET_DATE': {
-      return { ...state, dateStr: action.payload }
+      return { ...state, dateStr: action.payload, loaded: false }
     }
     case 'LOAD_BLOCKS': {
       return { ...state, blocks: action.payload, loaded: true }
