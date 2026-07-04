@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
 import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS } from './store'
 import { Dial } from './components/Dial'
@@ -23,7 +23,7 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock }) {
+function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock, contextBlockId, onContextMenu, contextRef }) {
   if (blocks.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
@@ -77,6 +77,52 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
               </div>
             </div>
             <Badge variant="default">{block.category}</Badge>
+            {block.is_recurring && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={e => { e.stopPropagation(); onContextMenu(block.id) }}
+                  aria-label="More options"
+                  style={{
+                    display: 'flex', padding: 4, border: 'none', background: 'none',
+                    color: 'var(--clr-text-tertiary)', cursor: 'pointer', borderRadius: 4,
+                    fontSize: 16, lineHeight: 1,
+                  }}
+                >
+                  ⋮
+                </button>
+                {contextBlockId === block.id && (
+                  <div ref={contextRef} style={{
+                    position: 'absolute', right: 0, top: '100%', zIndex: 50,
+                    minWidth: 140, padding: 4,
+                    background: 'var(--clr-surface-elevated)',
+                    border: '1px solid var(--clr-border)',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  }}>
+                    {[
+                      { label: 'Edit this day', action: () => { onEditBlock(block); onContextMenu(null) } },
+                      { label: 'Edit rule', action: () => { onContextMenu(null); window.location.href = '/settings' } },
+                      { label: 'Skip', action: () => { onDeleteBlock(block.id); onContextMenu(null) } },
+                    ].map(item => (
+                      <button
+                        key={item.label}
+                        onClick={e => { e.stopPropagation(); item.action() }}
+                        style={{
+                          display: 'block', width: '100%', padding: '6px 10px',
+                          border: 'none', background: 'none', cursor: 'pointer',
+                          fontSize: 13, textAlign: 'left', color: 'var(--clr-text)',
+                          borderRadius: 4,
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={e => { e.stopPropagation(); onEditBlock(block) }}
               aria-label={`Edit ${block.label}`}
@@ -196,6 +242,19 @@ function AppContent() {
 
   const todayStr = getTodayStr()
   const isToday = dateStr === todayStr
+  const [contextBlockId, setContextBlockId] = useState(null)
+  const contextRef = useRef(null)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (contextRef.current && !contextRef.current.contains(e.target)) {
+        setContextBlockId(null)
+      }
+    }
+    if (contextBlockId) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [contextBlockId])
+
   const formOpen = showForm || editingBlock
 
   if (loading) {
@@ -347,6 +406,9 @@ function AppContent() {
               onSelectBlock={selectBlock}
               onDeleteBlock={deleteBlock}
               onEditBlock={handleEdit}
+              contextBlockId={contextBlockId}
+              onContextMenu={setContextBlockId}
+              contextRef={contextRef}
             />
 
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

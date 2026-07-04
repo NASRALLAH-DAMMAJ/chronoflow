@@ -4,6 +4,7 @@ import { getTodayStr } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchBlocks, upsertBlocks, deleteBlock } from '../lib/blocks'
 import { fetchSchedule } from '../lib/schedule'
+import { migrateLocalStorage } from '../lib/migrate'
 
 const StoreContext = createContext(null)
 
@@ -24,6 +25,7 @@ export function StoreProvider({ children }) {
     if (!user || initFetched.current) return
     initFetched.current = true
     ;(async () => {
+      await migrateLocalStorage(supabase)
       try {
         const blocks = await fetchSchedule(supabase, today)
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
@@ -40,7 +42,7 @@ export function StoreProvider({ children }) {
   }, [user, supabase, today])
 
   useEffect(() => {
-    if (!state.loaded || !user) return
+    if (!state.loaded || !user || state.blocks.length === 0) return
     const timer = setTimeout(() => {
       upsertBlocks(supabase, state.dateStr, state.blocks).catch(console.error)
     }, 500)

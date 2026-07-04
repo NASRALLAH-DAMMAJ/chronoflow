@@ -149,7 +149,9 @@ function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange
 
     ctx.strokeStyle = isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.3)'
     ctx.lineWidth = isSelected ? 2 : 1
+    if (block.is_recurring) ctx.setLineDash([3, 3])
     ctx.stroke()
+    if (block.is_recurring) ctx.setLineDash([])
 
     const duration = block.end <= block.start ? block.end + 1440 - block.start : block.end - block.start
     if (block.label && duration > 30) {
@@ -159,7 +161,10 @@ function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange
       const y = cy + Math.sin(midAngle) * midR
       ctx.save()
       ctx.translate(x, y)
-      ctx.rotate(midAngle + PI / 2)
+      let rot = midAngle + PI / 2
+      while (rot > PI / 2) rot -= PI
+      while (rot < -PI / 2) rot += PI
+      ctx.rotate(rot)
       ctx.fillStyle = '#FFFFFF'
       ctx.font = 'bold 10px Inter, sans-serif'
       ctx.textAlign = 'center'
@@ -167,7 +172,7 @@ function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange
       const displayLabel = block.label.length > 14
         ? block.label.slice(0, 13) + '…'
         : block.label
-      ctx.fillText(displayLabel, 0, 0)
+      ctx.fillText(displayLabel + (block.is_recurring ? ' ↻' : ''), 0, 0)
       ctx.restore()
     }
   }
@@ -293,6 +298,7 @@ function drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart,
     const rmEnd = toRenderMinute(placementPos, zoomRange)
     const startAngle = renderMinuteToRadians(rmStart)
     const endAngle = renderMinuteToRadians(rmEnd)
+    const adjEndAngle = rmEnd <= rmStart ? endAngle + 2 * PI : endAngle
 
     ctx.save()
     ctx.beginPath()
@@ -308,24 +314,29 @@ function drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart,
     ctx.globalAlpha = 0.8
     ctx.stroke()
 
-    const midAngle = (startAngle + endAngle) / 2
-    const midR = innerR + arcWidth / 2
-    const mx = cx + Math.cos(midAngle) * midR
-    const my = cy + Math.sin(midAngle) * midR
-    ctx.setLineDash([])
-    ctx.translate(mx, my)
-    let rot = midAngle + PI / 2
-    if (rot > PI / 2 || rot < -PI / 2) rot += rot > 0 ? -PI : PI
-    ctx.rotate(rot)
-    ctx.fillStyle = pColor
-    ctx.font = 'bold 11px Inter, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    const duration = Math.round(Math.abs(rmEnd - rmStart))
-    const h = Math.floor(duration / 60)
-    const m = duration % 60
-    ctx.fillText(h > 0 ? h + 'h ' + m + 'm' : m + 'm', 0, 0)
-    ctx.restore()
+    if (rmStart !== rmEnd) {
+      const midAngle = (startAngle + adjEndAngle) / 2
+      const midR = innerR + arcWidth / 2
+      const mx = cx + Math.cos(midAngle) * midR
+      const my = cy + Math.sin(midAngle) * midR
+      ctx.setLineDash([])
+      ctx.translate(mx, my)
+      let rot = midAngle + PI / 2
+      while (rot > PI / 2) rot -= PI
+      while (rot < -PI / 2) rot += PI
+      ctx.rotate(rot)
+      ctx.fillStyle = pColor
+      ctx.font = 'bold 11px Inter, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      const duration = Math.round(rmEnd > rmStart ? rmEnd - rmStart : rmEnd + 1440 - rmStart)
+      const h = Math.floor(duration / 60)
+      const m = duration % 60
+      ctx.fillText(h > 0 ? h + 'h ' + m + 'm' : m + 'm', 0, 0)
+      ctx.restore()
+    } else {
+      ctx.restore()
+    }
   } else {
     const rm = toRenderMinute(placementPos, zoomRange)
     const angle = renderMinuteToRadians(rm)

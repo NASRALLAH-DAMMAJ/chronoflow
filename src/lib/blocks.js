@@ -1,4 +1,4 @@
-const DB_FIELDS = 'id,date,start_min,duration,label,category'
+const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id'
 
 function blockToDb(block, dateStr) {
   const wraps = block.end <= block.start
@@ -9,6 +9,8 @@ function blockToDb(block, dateStr) {
     duration: wraps ? block.end + 1440 - block.start : block.end - block.start,
     label: block.label,
     category: block.category,
+    is_recurring: block.is_recurring || false,
+    parent_rule_id: block.parent_rule_id || null,
   }
 }
 
@@ -20,6 +22,8 @@ function blockFromDb(row) {
     end: end >= 1440 ? end - 1440 : end,
     label: row.label,
     category: row.category,
+    is_recurring: row.is_recurring || false,
+    parent_rule_id: row.parent_rule_id || null,
   }
 }
 

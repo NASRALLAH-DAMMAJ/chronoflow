@@ -29,6 +29,7 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
         end: Math.min(finalEnd, 1440),
         label: label.trim(),
         category,
+        is_recurring: false,
       })
       if (onClose) onClose()
     } else {
