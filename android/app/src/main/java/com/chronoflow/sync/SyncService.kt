@@ -60,7 +60,7 @@ class SyncService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.sync_notification_title))
             .setContentText(getString(R.string.sync_notification_text))
-            .setSmallIcon(android.R.drawable.ic_menu_sync)
+            .setSmallIcon(R.drawable.ic_sync)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }
