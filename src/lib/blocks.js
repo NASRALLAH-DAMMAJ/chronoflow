@@ -49,6 +49,18 @@ export async function upsertBlocks(supabase, dateStr, blocks, userId) {
   if (error) throw error
 }
 
+export async function fetchBlocksByRule(supabase, ruleId) {
+  const { data, error } = await supabase
+    .from('blocks')
+    .select(DB_FIELDS)
+    .eq('parent_rule_id', ruleId)
+    .eq('archived', false)
+
+  if (error) throw error
+  const blocks = (data || []).map(blockFromDb)
+  return { count: blocks.length, blocks }
+}
+
 export async function deleteBlock(supabase, id) {
   const { error } = await supabase
     .from('blocks')

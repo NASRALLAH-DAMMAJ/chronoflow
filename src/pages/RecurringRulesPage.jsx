@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchRules, addRule, updateRule, deleteRule } from '../lib/recurringRules'
+import { fetchBlocksByRule, deleteBlock } from '../lib/blocks'
 import { CATEGORY_COLORS } from '../store/constants'
-import { Button, Card } from '../design-system/components'
+import { Button, Card, Modal } from '../design-system/components'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -31,6 +32,8 @@ export default function RecurringRulesPage() {
   const [rules, setRules] = useState([])
   const [editing, setEditing] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteBlockCount, setDeleteBlockCount] = useState(0)
 
   useEffect(() => {
     fetchRules(supabase).then(data => {
@@ -59,12 +62,42 @@ export default function RecurringRulesPage() {
 
   const handleDelete = useCallback(async (id) => {
     try {
-      await deleteRule(supabase, id)
-      setRules(prev => prev.filter(r => r.id !== id))
+      const { count, blocks } = await fetchBlocksByRule(supabase, id)
+      if (count > 0) {
+        setDeleteTarget(id)
+        setDeleteBlockCount(count)
+      } else {
+        await deleteRule(supabase, id)
+        setRules(prev => prev.filter(r => r.id !== id))
+      }
     } catch (e) {
       console.error('Failed to delete rule:', e)
     }
   }, [supabase])
+
+  const confirmDeleteBlocks = useCallback(async () => {
+    if (!deleteTarget) return
+    try {
+      const { blocks } = await fetchBlocksByRule(supabase, deleteTarget)
+      await Promise.all(blocks.map(b => deleteBlock(supabase, b.id)))
+      await deleteRule(supabase, deleteTarget)
+      setRules(prev => prev.filter(r => r.id !== deleteTarget))
+      setDeleteTarget(null)
+    } catch (e) {
+      console.error('Failed to delete rule and blocks:', e)
+    }
+  }, [supabase, deleteTarget])
+
+  const confirmKeepBlocks = useCallback(async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteRule(supabase, deleteTarget)
+      setRules(prev => prev.filter(r => r.id !== deleteTarget))
+      setDeleteTarget(null)
+    } catch (e) {
+      console.error('Failed to delete rule:', e)
+    }
+  }, [supabase, deleteTarget])
 
   if (loading) {
     return (
@@ -250,6 +283,20 @@ export default function RecurringRulesPage() {
           )
         })}
       </div>
+
+      <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete rule?">
+        <p style={{ margin: '0 0 16px', color: 'var(--clr-text)', fontSize: 14, lineHeight: 1.5 }}>
+          This rule has {deleteBlockCount} generated block{deleteBlockCount !== 1 ? 's' : ''}. What would you like to do?
+        </p>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <Button variant="ghost" size="sm" onClick={confirmKeepBlocks}>
+            Keep blocks
+          </Button>
+          <Button variant="danger" size="sm" onClick={confirmDeleteBlocks}>
+            Delete blocks too
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

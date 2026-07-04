@@ -13,6 +13,7 @@ import ProtectedRoute from './pages/ProtectedRoute'
 import RecurringRulesPage from './pages/RecurringRulesPage'
 import SettingsPage from './pages/SettingsPage'
 import ArchivePage from './pages/ArchivePage'
+import AnalyticsPage from './pages/AnalyticsPage'
 
 function formatDateLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -390,6 +391,12 @@ function AppContent() {
           <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
             {isDark ? <><IconSun /> Light</> : <><IconMoon /> Dark</>}
           </Button>
+          <Link to="/analytics" style={{
+            fontSize: 12, color: 'var(--clr-text-secondary)',
+            textDecoration: 'none', padding: '4px 8px',
+          }}>
+            Analytics
+          </Link>
           <Link to="/archive" style={{
             fontSize: 12, color: 'var(--clr-text-secondary)',
             textDecoration: 'none', padding: '4px 8px',
@@ -516,6 +523,11 @@ export default function App() {
       <Route path="/settings/rules" element={
         <ProtectedRoute>
           <RecurringRulesPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/analytics" element={
+        <ProtectedRoute>
+          <AnalyticsPage />
         </ProtectedRoute>
       } />
       <Route path="/archive" element={
