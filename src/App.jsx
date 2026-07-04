@@ -11,6 +11,7 @@ import { useSupabase } from './lib/SupabaseContext'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 import RecurringRulesPage from './pages/RecurringRulesPage'
+import SettingsPage from './pages/SettingsPage'
 
 function formatDateLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -77,82 +78,93 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
               </div>
             </div>
             <Badge variant="default">{block.category}</Badge>
-            {block.is_recurring && (
-              <div style={{ position: 'relative' }}>
-                <button
-                  onClick={e => { e.stopPropagation(); onContextMenu(block.id) }}
-                  aria-label="More options"
-                  style={{
-                    display: 'flex', padding: 4, border: 'none', background: 'none',
-                    color: 'var(--clr-text-tertiary)', cursor: 'pointer', borderRadius: 4,
-                    fontSize: 16, lineHeight: 1,
-                  }}
-                >
-                  ⋮
-                </button>
-                {contextBlockId === block.id && (
-                  <div ref={contextRef} style={{
-                    position: 'absolute', right: 0, top: '100%', zIndex: 50,
-                    minWidth: 140, padding: 4,
-                    background: 'var(--clr-surface-elevated)',
-                    border: '1px solid var(--clr-border)',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  }}>
-                    {[
-                      { label: 'Edit this day', action: () => { onEditBlock(block); onContextMenu(null) } },
-                      { label: 'Edit rule', action: () => { onContextMenu(null); onEditRule && onEditRule() } },
-                      { label: 'Skip', action: () => { onDeleteBlock(block.id); onContextMenu(null) } },
-                    ].map(item => (
-                      <button
-                        key={item.label}
-                        onClick={e => { e.stopPropagation(); item.action() }}
-                        style={{
-                          display: 'block', width: '100%', padding: '6px 10px',
-                          border: 'none', background: 'none', cursor: 'pointer',
-                          fontSize: 13, textAlign: 'left', color: 'var(--clr-text)',
-                          borderRadius: 4,
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+            {block.category === 'sleep' ? (
+              <div style={{
+                fontSize: 11, color: 'var(--clr-text-tertiary)',
+                padding: '4px 6px', whiteSpace: 'nowrap',
+              }}>
+                Locked
+              </div>
+            ) : (
+              <>
+                {block.is_recurring && (
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); onContextMenu(block.id) }}
+                      aria-label="More options"
+                      style={{
+                        display: 'flex', padding: 4, border: 'none', background: 'none',
+                        color: 'var(--clr-text-tertiary)', cursor: 'pointer', borderRadius: 4,
+                        fontSize: 16, lineHeight: 1,
+                      }}
+                    >
+                      ⋮
+                    </button>
+                    {contextBlockId === block.id && (
+                      <div ref={contextRef} style={{
+                        position: 'absolute', right: 0, top: '100%', zIndex: 50,
+                        minWidth: 140, padding: 4,
+                        background: 'var(--clr-surface-elevated)',
+                        border: '1px solid var(--clr-border)',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      }}>
+                        {[
+                          { label: 'Edit this day', action: () => { onEditBlock(block); onContextMenu(null) } },
+                          { label: 'Edit rule', action: () => { onContextMenu(null); onEditRule && onEditRule() } },
+                          { label: 'Skip', action: () => { onDeleteBlock(block.id); onContextMenu(null) } },
+                        ].map(item => (
+                          <button
+                            key={item.label}
+                            onClick={e => { e.stopPropagation(); item.action() }}
+                            style={{
+                              display: 'block', width: '100%', padding: '6px 10px',
+                              border: 'none', background: 'none', cursor: 'pointer',
+                              fontSize: 13, textAlign: 'left', color: 'var(--clr-text)',
+                              borderRadius: 4,
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+                <button
+                  onClick={e => { e.stopPropagation(); onEditBlock(block) }}
+                  aria-label={`Edit ${block.label}`}
+                  style={{
+                    display: 'flex',
+                    padding: 4,
+                    border: 'none',
+                    background: 'none',
+                    color: 'var(--clr-text-tertiary)',
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                  }}
+                >
+                  <IconEdit />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
+                  aria-label={`Delete ${block.label}`}
+                  style={{
+                    display: 'flex',
+                    padding: 4,
+                    border: 'none',
+                    background: 'none',
+                    color: 'var(--clr-text-tertiary)',
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                  }}
+                >
+                  <IconTrash />
+                </button>
+              </>
             )}
-            <button
-              onClick={e => { e.stopPropagation(); onEditBlock(block) }}
-              aria-label={`Edit ${block.label}`}
-              style={{
-                display: 'flex',
-                padding: 4,
-                border: 'none',
-                background: 'none',
-                color: 'var(--clr-text-tertiary)',
-                cursor: 'pointer',
-                borderRadius: 4,
-              }}
-            >
-              <IconEdit />
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
-              aria-label={`Delete ${block.label}`}
-              style={{
-                display: 'flex',
-                padding: 4,
-                border: 'none',
-                background: 'none',
-                color: 'var(--clr-text-tertiary)',
-                cursor: 'pointer',
-                borderRadius: 4,
-              }}
-            >
-              <IconTrash />
-            </button>
           </div>
         )
       })}
@@ -201,6 +213,12 @@ function AppContent() {
   function dismissOnboarding() {
     try { localStorage.setItem('cf-onboarded', '1') } catch {}
     setShowOnboarding(false)
+  }
+
+  function handleDelete(blockId) {
+    const block = blocks.find(b => b.id === blockId)
+    if (block?.category === 'sleep') return
+    deleteBlock(blockId)
   }
 
   function handleEdit(block) {
@@ -424,12 +442,12 @@ function AppContent() {
               blocks={blocks}
               selectedId={selectedId}
               onSelectBlock={selectBlock}
-              onDeleteBlock={deleteBlock}
+              onDeleteBlock={handleDelete}
               onEditBlock={handleEdit}
               contextBlockId={contextBlockId}
               onContextMenu={setContextBlockId}
               contextRef={contextRef}
-              onEditRule={() => navigate('/settings')}
+              onEditRule={() => navigate('/settings/rules')}
             />
 
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -462,6 +480,11 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/settings" element={
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/settings/rules" element={
         <ProtectedRoute>
           <RecurringRulesPage />
         </ProtectedRoute>

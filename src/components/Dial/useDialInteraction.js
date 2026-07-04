@@ -40,7 +40,9 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     let minEdgeDiff = Infinity
     const edgeThreshold = 0.12
 
-    for (const block of blocks) {
+    const actionable = blocks.filter(b => b.category !== 'sleep')
+
+    for (const block of actionable) {
       const start = block.start
       const end = block.end
 
@@ -69,7 +71,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
       return bestEdgeHit
     }
 
-    for (const block of blocks) {
+    for (const block of actionable) {
       const start = block.start
       const end = block.end
       const wraps = end <= start
