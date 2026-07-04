@@ -1,5 +1,4 @@
 import React from 'react'
-import { Text } from '@mantine/core'
 import { useOffline } from '../hooks/useOffline'
 
 export default function OfflineBanner() {
@@ -10,6 +9,7 @@ export default function OfflineBanner() {
     <div
       role="alert"
       aria-live="assertive"
+      className="animate-slide-down"
       style={{
         position: 'fixed',
         top: 0,
@@ -24,9 +24,7 @@ export default function OfflineBanner() {
         fontWeight: 600,
       }}
     >
-      <Text size="sm" style={{ color: '#fff', margin: 0 }}>
-        You're offline — changes will sync when reconnected
-      </Text>
+      You're offline — changes will sync when reconnected
     </div>
   )
 }

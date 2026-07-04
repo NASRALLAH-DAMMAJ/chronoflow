@@ -20,6 +20,8 @@ body {
   background-color: var(--clr-bg);
   transition: background-color 0.3s cubic-bezier(0.4,0,0.2,1), color 0.3s cubic-bezier(0.4,0,0.2,1);
   min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 
 ::selection {
@@ -116,6 +118,11 @@ button, a, input, select, textarea {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
@@ -141,24 +148,49 @@ button, a, input, select, textarea {
   to { opacity: 1; max-height: 500px; }
 }
 
+@keyframes bottomSheetIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes swipeLeft {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(-30px); opacity: 0; }
+}
+
+@keyframes swipeRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(30px); opacity: 0; }
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.35s ease-out;
+  animation: fadeInUp 0.25s ease-out;
 }
 
 .animate-fade-in-scale {
-  animation: fadeInScale 0.3s ease-out;
+  animation: fadeInScale 0.2s ease-out;
 }
 
 .animate-slide-in-right {
-  animation: slideInRight 0.3s ease-out;
+  animation: slideInRight 0.25s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.25s ease-out;
 }
 
 .animate-slide-in-up {
-  animation: slideInUp 0.35s ease-out;
+  animation: slideInUp 0.25s ease-out;
 }
 
 .animate-pulse {
@@ -166,28 +198,40 @@ button, a, input, select, textarea {
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.25s ease-out;
+  animation: scaleIn 0.2s ease-out;
 }
 
 .animate-slide-down {
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown 0.25s ease-out;
   overflow: hidden;
 }
 
+.animate-bounce-in {
+  animation: bounceIn 0.3s ease-out;
+}
+
+.animate-bottom-sheet {
+  animation: bottomSheetIn 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 .transition-all {
-  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
 }
 
 .transition-colors {
-  transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
 .transition-transform {
-  transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
+  transition: transform 0.15s cubic-bezier(0.4,0,0.2,1);
+}
+
+.transition-fast {
+  transition: all 0.1s ease-out;
 }
 
 .hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .hover-lift:hover {
@@ -196,7 +240,7 @@ button, a, input, select, textarea {
 }
 
 .hover-glow {
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.15s ease;
 }
 
 .hover-glow:hover {
@@ -227,6 +271,60 @@ button, a, input, select, textarea {
 @media (max-width: 720px) {
   .app-grid {
     grid-template-columns: 1fr !important;
+    gap: var(--sp-4) !important;
+  }
+
+  .app-grid > div:first-child {
+    order: 0;
+  }
+
+  .app-grid > div:last-child {
+    order: -1;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: var(--sp-3) !important;
+    padding: var(--sp-3) var(--sp-4) !important;
+    margin-bottom: var(--sp-3) !important;
+  }
+
+  header > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 4px !important;
+  }
+
+  header > div:last-child > a,
+  header > div:last-child > button {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
+    min-height: 36px !important;
+    min-width: auto !important;
+  }
+
+  footer {
+    padding: var(--sp-3) 0 !important;
+    font-size: 11px !important;
+  }
+
+  #main-content {
+    padding: var(--sp-3) var(--sp-3) !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-stack {
+    flex-direction: column !important;
   }
 }
 
@@ -234,15 +332,20 @@ button, a, input, select, textarea {
   body {
     font-size: 14px;
   }
+
+  #main-content {
+    padding: var(--sp-2) var(--sp-2) !important;
+  }
 }
 
-@media (max-width: 720px) {
-  header {
-    flex-direction: column;
-    align-items: flex-start !important;
+@media (min-width: 721px) {
+  .mobile-only {
+    display: none !important;
   }
+}
 
-  footer {
-    padding: var(--sp-4) 0 !important;
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] {
+    font-size: 16px !important;
   }
 }

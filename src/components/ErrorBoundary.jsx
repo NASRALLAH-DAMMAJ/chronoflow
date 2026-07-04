@@ -1,5 +1,4 @@
 import React from 'react'
-import { Button, Card, Text } from '@mantine/core'
 import { isNetworkError } from '../lib/retry'
 
 const MAX_RETRIES = 3
@@ -48,55 +47,72 @@ export default class ErrorBoundary extends React.Component {
       const name = this.props.name || 'This section'
 
       return (
-        <Card
-          shadow="sm"
-          padding="lg"
-          radius="md"
+        <div
+          className="animate-fade-in-scale"
           style={{
             margin: 16,
+            padding: 20,
+            borderRadius: 8,
             border: '1px solid rgba(255,75,75,0.3)',
             backgroundColor: 'rgba(255,75,75,0.05)',
           }}
         >
-          <Text fw={600} size="lg" color="red" mb={4}>
+          <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--clr-danger, #ef4444)', marginBottom: 4 }}>
             {isNetwork ? 'Connection Problem' : 'Something went wrong'}
-          </Text>
-          <Text size="sm" color="dimmed" mb={12}>
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--clr-text-secondary)', marginBottom: 12 }}>
             {isNetwork
               ? `${name} couldn't load. Check your internet connection.`
               : `${name} failed to load. Your data is safe.`
             }
-          </Text>
-          <Text size="xs" color="dimmed" mb={12} style={{ fontFamily: 'monospace', fontSize: 11 }}>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', marginBottom: 12, fontFamily: 'monospace' }}>
             {error?.message || 'Unknown error'}
-          </Text>
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {canRetry && (
-              <Button
-                size="xs"
-                variant="light"
-                color="red"
-                loading={isRetrying}
+              <button
+                className="transition-all"
                 onClick={this.handleRetry}
+                disabled={isRetrying}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  border: '1px solid rgba(255,75,75,0.3)',
+                  borderRadius: 6,
+                  backgroundColor: 'rgba(255,75,75,0.1)',
+                  color: 'var(--clr-danger, #ef4444)',
+                  cursor: 'pointer',
+                  opacity: isRetrying ? 0.6 : 1,
+                }}
               >
                 {isRetrying ? 'Retrying...' : `Retry${retryCount > 0 ? ` (${retryCount}/${MAX_RETRIES})` : ''}`}
-              </Button>
+              </button>
             )}
-            <Button
-              size="xs"
-              variant="subtle"
-              color="gray"
+            <button
+              className="transition-all"
               onClick={this.handleDismiss}
+              style={{
+                padding: '6px 14px',
+                fontSize: 13,
+                fontWeight: 500,
+                border: '1px solid var(--clr-border)',
+                borderRadius: 6,
+                backgroundColor: 'transparent',
+                color: 'var(--clr-text-secondary)',
+                cursor: 'pointer',
+              }}
             >
               Dismiss
-            </Button>
+            </button>
           </div>
           {retryCount >= MAX_RETRIES && (
-            <Text size="xs" color="dimmed" mt={8}>
+            <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginTop: 8 }}>
               Multiple retries failed. Try refreshing the page.
-            </Text>
+            </div>
           )}
-        </Card>
+        </div>
       )
     }
 

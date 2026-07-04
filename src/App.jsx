@@ -13,6 +13,7 @@ import { useSupabase } from './lib/SupabaseContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
+import { useSwipe } from './hooks/useSwipe'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 
@@ -107,6 +108,11 @@ function AppContent() {
     goToDate(d)
   }
 
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: () => goToDay(1),
+    onSwipeRight: () => goToDay(-1),
+  })
+
   const todayStr = getTodayStr()
   const isToday = dateStr === todayStr
   const [contextBlockId, setContextBlockId] = useState(null)
@@ -131,6 +137,7 @@ function AppContent() {
         id="main-content"
         tabIndex={-1}
         className="animate-fade-in"
+        {...swipeHandlers}
         style={{
           maxWidth: 1000,
           margin: '0 auto',
