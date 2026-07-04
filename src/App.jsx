@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate } from 'react-router-dom'
 import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS } from './store'
 import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
@@ -23,7 +23,7 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock, contextBlockId, onContextMenu, contextRef }) {
+function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   if (blocks.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
@@ -101,7 +101,7 @@ function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onEditBlo
                   }}>
                     {[
                       { label: 'Edit this day', action: () => { onEditBlock(block); onContextMenu(null) } },
-                      { label: 'Edit rule', action: () => { onContextMenu(null); window.location.href = '/settings' } },
+                      { label: 'Edit rule', action: () => { onContextMenu(null); onEditRule && onEditRule() } },
                       { label: 'Skip', action: () => { onDeleteBlock(block.id); onContextMenu(null) } },
                     ].map(item => (
                       <button
@@ -187,6 +187,7 @@ function Onboarding({ onDismiss }) {
 }
 
 function AppContent() {
+  const navigate = useNavigate()
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
   const { blocks, dateStr, selectedId, completedDays, loading, streak, addBlock, updateBlock, deleteBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
@@ -409,6 +410,7 @@ function AppContent() {
               contextBlockId={contextBlockId}
               onContextMenu={setContextBlockId}
               contextRef={contextRef}
+              onEditRule={() => navigate('/settings')}
             />
 
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

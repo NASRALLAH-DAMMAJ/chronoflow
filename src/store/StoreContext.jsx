@@ -52,7 +52,6 @@ export function StoreProvider({ children }) {
   const goToDate = useCallback((date) => {
     const ds = getTodayStr(date)
     dispatch({ type: 'SET_DATE', payload: ds })
-    dispatch({ type: 'SET_LOADING', payload: true })
     ;(async () => {
       try {
         const blocks = await fetchSchedule(supabase, ds)
@@ -65,7 +64,6 @@ export function StoreProvider({ children }) {
           dispatch({ type: 'LOAD_BLOCKS', payload: [] })
         }
       }
-      dispatch({ type: 'SET_LOADING', payload: false })
     })()
   }, [supabase])
 
