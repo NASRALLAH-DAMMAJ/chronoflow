@@ -1,4 +1,4 @@
-import { LOCALE, MS_PER_DAY, getTodayStr } from './store/constants'
+import { LOCALE, MS_PER_DAY, SNAP_MINUTES, getTodayStr } from './store/constants'
 
 export function minutesToStr(m) {
   const h = Math.floor(((m % 1440) + 1440) % 1440 / 60)
@@ -14,7 +14,7 @@ export function formatDuration(mins) {
   return `${h}h ${m}m`
 }
 
-export function snapToGrid(minutes, snapMinutes = 15) {
+export function snapToGrid(minutes, snapMinutes = SNAP_MINUTES) {
   return Math.round(minutes / snapMinutes) * snapMinutes
 }
 

@@ -29,13 +29,13 @@ describe('formatDuration', () => {
 })
 
 describe('snapToGrid', () => {
-  it('snaps to nearest 15', () => {
-    expect(snapToGrid(10)).toBe(15)
-    expect(snapToGrid(20)).toBe(15)
-    expect(snapToGrid(23)).toBe(30)
+  it('snaps to nearest 5', () => {
+    expect(snapToGrid(3)).toBe(5)
+    expect(snapToGrid(7)).toBe(5)
+    expect(snapToGrid(8)).toBe(10)
   })
   it('snaps exact values', () => {
-    expect(snapToGrid(15)).toBe(15)
+    expect(snapToGrid(5)).toBe(5)
     expect(snapToGrid(30)).toBe(30)
   })
 })
