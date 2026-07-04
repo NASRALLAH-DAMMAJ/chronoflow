@@ -20,18 +20,25 @@ export function StoreProvider({ children }) {
     loading: true,
   })
   const initFetched = useRef(false)
+  const genRef = useRef(0)
+  const userIdRef = useRef(null)
 
   useEffect(() => {
     if (!user || initFetched.current) return
     initFetched.current = true
+    userIdRef.current = user.id
+    const currentUser = user.id
     ;(async () => {
       await migrateLocalStorage(supabase)
+      if (userIdRef.current !== currentUser) return
       try {
         const blocks = await fetchSchedule(supabase, today)
+        if (userIdRef.current !== currentUser) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch {
         try {
           const blocks = await fetchBlocks(supabase, today)
+          if (userIdRef.current !== currentUser) return
           dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
         } catch {
           dispatch({ type: 'LOAD_BLOCKS', payload: [] })
@@ -52,13 +59,16 @@ export function StoreProvider({ children }) {
   const goToDate = useCallback((date) => {
     const ds = getTodayStr(date)
     dispatch({ type: 'SET_DATE', payload: ds })
+    const gen = ++genRef.current
     ;(async () => {
       try {
         const blocks = await fetchSchedule(supabase, ds)
+        if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch {
         try {
           const blocks = await fetchBlocks(supabase, ds)
+          if (gen !== genRef.current) return
           dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
         } catch {
           dispatch({ type: 'LOAD_BLOCKS', payload: [] })

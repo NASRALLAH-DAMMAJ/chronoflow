@@ -1,21 +1,33 @@
+function lsGet(key) {
+  try { return localStorage.getItem(key) } catch { return null }
+}
+
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val) } catch {}
+}
+
 export async function migrateLocalStorage(supabase) {
-  if (localStorage.getItem('cf-migrated')) return false
+  if (lsGet('cf-migrated')) return false
 
   const keys = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key && key.startsWith('cf-blocks-')) keys.push(key)
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('cf-blocks-')) keys.push(key)
+    }
+  } catch {
+    return false
   }
 
   if (keys.length === 0) {
-    localStorage.setItem('cf-migrated', '1')
+    lsSet('cf-migrated', '1')
     return false
   }
 
   for (const key of keys) {
     const dateStr = key.slice('cf-blocks-'.length)
     try {
-      const raw = localStorage.getItem(key)
+      const raw = lsGet(key)
       if (!raw) continue
       const blocks = JSON.parse(raw)
       if (blocks.length === 0) continue
@@ -39,6 +51,6 @@ export async function migrateLocalStorage(supabase) {
     }
   }
 
-  localStorage.setItem('cf-migrated', '1')
+  lsSet('cf-migrated', '1')
   return true
 }

@@ -25,7 +25,7 @@ export function drawDial(ctx, cx, cy, radius, blocks, selectedId, currentTimeMin
   drawHourTicks(ctx, cx, cy, radius, innerR, textSecondary, border, zoomRange)
   drawHourLabels(ctx, cx, cy, innerR, text, zoomRange)
   drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange)
-  drawCurrentTime(ctx, cx, cy, innerR, arcWidth, currentTimeMinutes, primary)
+  drawCurrentTime(ctx, cx, cy, innerR, arcWidth, currentTimeMinutes, primary, zoomRange)
 
   if (placement && placementPos != null) {
     drawPlacement(ctx, cx, cy, innerR, arcWidth, placement, placementStart, placementPos, zoomRange)
@@ -125,7 +125,13 @@ function drawHourLabels(ctx, cx, cy, innerR, color, zoomRange) {
 
 function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange) {
   for (const block of blocks) {
-    if (zoomRange && !isVisible(block.start, zoomRange) && !isVisible(block.end, zoomRange)) continue
+    if (zoomRange) {
+      const wraps = block.end <= block.start
+      const visible = wraps
+        ? (block.start < zoomRange.end || block.end > zoomRange.start)
+        : isVisible(block.start, zoomRange) || isVisible(block.end, zoomRange)
+      if (!visible) continue
+    }
 
     const renderStart = toRenderMinute(block.start, zoomRange)
     const renderEnd = toRenderMinute(block.end, zoomRange)
@@ -178,9 +184,9 @@ function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange
   }
 }
 
-function drawCurrentTime(ctx, cx, cy, innerR, arcWidth, currentTimeMinutes, color) {
+function drawCurrentTime(ctx, cx, cy, innerR, arcWidth, currentTimeMinutes, color, zoomRange) {
   if (!currentTimeMinutes && currentTimeMinutes !== 0) return
-  const angle = renderMinuteToRadians(currentTimeMinutes)
+  const angle = renderMinuteToRadians(toRenderMinute(currentTimeMinutes, zoomRange))
   const r1 = innerR + 4
   const r2 = innerR + arcWidth - 4
 

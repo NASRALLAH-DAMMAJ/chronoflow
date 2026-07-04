@@ -1,11 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
 
+function getStoredTheme() {
+  try {
+    return localStorage.getItem('cf-theme')
+  } catch {
+    return null
+  }
+}
+
+function setStoredTheme(value) {
+  try {
+    localStorage.setItem('cf-theme', value)
+  } catch {}
+}
+
 export function useDarkMode() {
   const prefersDark = typeof window !== 'undefined'
     && window.matchMedia('(prefers-color-scheme: dark)').matches
 
   const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem('cf-theme')
+    const stored = getStoredTheme()
     if (stored === 'dark') return true
     if (stored === 'light') return false
     return prefersDark
@@ -14,7 +28,7 @@ export function useDarkMode() {
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = (e) => {
-      if (!localStorage.getItem('cf-theme')) {
+      if (!getStoredTheme()) {
         setIsDark(e.matches)
       }
     }
@@ -29,7 +43,7 @@ export function useDarkMode() {
   const toggle = useCallback(() => {
     setIsDark(prev => {
       const next = !prev
-      localStorage.setItem('cf-theme', next ? 'dark' : 'light')
+      setStoredTheme(next ? 'dark' : 'light')
       return next
     })
   }, [])

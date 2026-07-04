@@ -194,10 +194,12 @@ function AppContent() {
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
   const [placement, setPlacement] = useState(null)
-  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('cf-onboarded'))
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return !localStorage.getItem('cf-onboarded') } catch { return true }
+  })
 
   function dismissOnboarding() {
-    localStorage.setItem('cf-onboarded', '1')
+    try { localStorage.setItem('cf-onboarded', '1') } catch {}
     setShowOnboarding(false)
   }
 
@@ -218,12 +220,29 @@ function AppContent() {
   }
 
   function handlePlaceOnDial(startMin, endMin) {
-    const snappedStart = Math.round(startMin / 15) * 15
-    const snappedEnd = Math.max(snappedStart + 15, Math.round(endMin / 15) * 15)
+    const a = Math.round(startMin / 15) * 15
+    const b = Math.round(endMin / 15) * 15
+    let start, end
+    if (b >= a) {
+      start = a
+      end = b
+    } else {
+      const wrap = b + 1440 - a
+      const direct = a - b
+      if (wrap <= direct) {
+        start = a
+        end = b
+      } else {
+        start = b
+        end = a
+      }
+    }
+    if (end === start) end = start + 15
+    end = Math.min(end, 1440)
     addBlock({
       id: crypto.randomUUID(),
-      start: snappedStart,
-      end: Math.min(snappedEnd, 1440),
+      start: start % 1440,
+      end,
       label: placement.label,
       category: placement.category,
       tags: [],

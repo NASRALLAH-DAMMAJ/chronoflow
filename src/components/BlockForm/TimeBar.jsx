@@ -1,7 +1,9 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
 import { snapToGrid } from '../../utils'
+import { SNAP_MINUTES } from '../../store/constants'
 
 const MINUTES_IN_DAY = 1440
+const SNAP = SNAP_MINUTES
 
 function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val))
