@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.ChronoFlow" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="colorPrimary">#FF6750A4</item>
-        <item name="colorPrimaryDark">#FF3700B3</item>
-        <item name="colorAccent">#FF03DAC5</item>
-        <item name="android:statusBarColor">#FF6750A4</item>
-    </style>
-</resources>
