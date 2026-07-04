@@ -42,7 +42,7 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     let minEdgeDiff = Infinity
     const edgeThreshold = DIAL.EDGE_THRESHOLD
 
-    const actionable = blocks.filter(b => b.category !== 'sleep')
+    const actionable = blocks
 
     for (const block of actionable) {
       const start = block.start

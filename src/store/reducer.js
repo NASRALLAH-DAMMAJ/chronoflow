@@ -28,7 +28,8 @@ export function blockReducer(state, action) {
       const wraps = block.end <= block.start
       const duration = wraps ? (block.end + MINUTES_IN_DAY - block.start) : (block.end - block.start)
       const snappedStart = snapToGrid(newStart)
-      const newEnd = snapToGrid(snappedStart + duration)
+      let newEnd = snapToGrid(snappedStart + duration)
+      if (newEnd > MINUTES_IN_DAY) newEnd = newEnd - MINUTES_IN_DAY
       return {
         ...state,
         blocks: state.blocks.map(b =>
@@ -73,7 +74,7 @@ export function blockReducer(state, action) {
       return { ...state, blocks: action.payload, loaded: true }
     }
     case 'SELECT_BLOCK': {
-      return { ...state, selectedId: action.payload.id }
+      return { ...state, selectedId: action.payload }
     }
     case 'COMPLETE_DAY': {
       const ds = action.payload

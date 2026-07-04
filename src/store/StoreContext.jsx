@@ -23,6 +23,7 @@ export function StoreProvider({ children }) {
   const genRef = useRef(0)
   const userIdRef = useRef(null)
   const hasLoadedOnce = useRef(false)
+  const saveTimerRef = useRef(null)
 
   useEffect(() => {
     if (!user || initFetched.current) return
@@ -50,13 +51,23 @@ export function StoreProvider({ children }) {
     })()
   }, [user, supabase, today])
 
+  const saveToDb = useCallback((dateStr, blocks) => {
+    if (!user || !supabase) return
+    upsertBlocks(supabase, dateStr, blocks, user.id).catch(err => {
+      console.error('[Store] Failed to save blocks:', err)
+    })
+  }, [user, supabase])
+
   useEffect(() => {
     if (!hasLoadedOnce.current || !user || !state.loaded) return
-    const timer = setTimeout(() => {
-      upsertBlocks(supabase, state.dateStr, state.blocks, user.id).catch(console.error)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [state.dateStr, state.blocks, user, supabase])
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      saveToDb(state.dateStr, state.blocks)
+    }, 300)
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
+  }, [state.dateStr, state.blocks, user, state.loaded, saveToDb])
 
   const goToDate = useCallback((date) => {
     const ds = getTodayStr(date)
@@ -89,12 +100,16 @@ export function StoreProvider({ children }) {
 
   const deleteBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
-    deleteBlock(supabase, id).catch(console.error)
+    deleteBlock(supabase, id).catch(err => {
+      console.error('[Store] Failed to delete block:', err)
+    })
   }, [supabase])
 
   const archiveBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
-    archiveBlock(supabase, id).catch(console.error)
+    archiveBlock(supabase, id).catch(err => {
+      console.error('[Store] Failed to archive block:', err)
+    })
   }, [supabase])
 
   const moveBlock = useCallback((id, newStart) => {
@@ -110,7 +125,7 @@ export function StoreProvider({ children }) {
   }, [])
 
   const selectBlock = useCallback((id) => {
-    dispatch({ type: 'SELECT_BLOCK', payload: { id } })
+    dispatch({ type: 'SELECT_BLOCK', payload: id })
   }, [])
 
   useEffect(() => {

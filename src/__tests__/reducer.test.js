@@ -169,7 +169,7 @@ describe('blockReducer', () => {
   describe('SELECT_BLOCK', () => {
     it('sets selectedId', () => {
       const state = { ...initialState, selectedId: null }
-      const result = blockReducer(state, { type: 'SELECT_BLOCK', payload: { id: 'b1' } })
+      const result = blockReducer(state, { type: 'SELECT_BLOCK', payload: 'b1' })
       expect(result.selectedId).toBe('b1')
     })
   })
