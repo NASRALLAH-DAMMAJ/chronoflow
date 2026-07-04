@@ -23,6 +23,7 @@ export function StoreProvider({ children }) {
   const genRef = useRef(0)
   const userIdRef = useRef(null)
   const hasLoadedOnce = useRef(false)
+  const saveTimerRef = useRef(null)
   const stateRef = useRef(state)
   stateRef.current = state
 
@@ -53,16 +54,29 @@ export function StoreProvider({ children }) {
   }, [user, supabase, today])
 
   const saveToDb = useCallback((dateStr, blocks) => {
-    if (!user || !supabase || !dateStr) return
+    if (!user || !supabase || !dateStr) return Promise.resolve()
     return upsertBlocks(supabase, dateStr, blocks, user.id).catch(err => {
       console.error('[Store] Failed to save blocks:', err)
     })
   }, [user, supabase])
 
+  const flushSave = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+    const s = stateRef.current
+    if (s.loaded && user && supabase) {
+      return saveToDb(s.dateStr, s.blocks)
+    }
+    return Promise.resolve()
+  }, [user, supabase, saveToDb])
+
   useEffect(() => {
     return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
       const s = stateRef.current
-      if (s.loaded && s.blocks.length >= 0 && user && supabase) {
+      if (s.loaded && user && supabase && s.dateStr) {
         upsertBlocks(supabase, s.dateStr, s.blocks, user.id).catch(err => {
           console.error('[Store] Failed to save on unmount:', err)
         })
@@ -72,18 +86,22 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     if (!hasLoadedOnce.current || !user || !state.loaded) return
-    const timer = setTimeout(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
       saveToDb(state.dateStr, state.blocks)
+      saveTimerRef.current = null
     }, 300)
-    return () => clearTimeout(timer)
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = null
+      }
+    }
   }, [state.dateStr, state.blocks, user, state.loaded, saveToDb])
 
   const goToDate = useCallback(async (date) => {
     const ds = getTodayStr(date)
-    const current = stateRef.current
-    if (current.loaded && current.dateStr !== ds) {
-      await saveToDb(current.dateStr, current.blocks)
-    }
+    await flushSave()
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
     try {
@@ -99,7 +117,7 @@ export function StoreProvider({ children }) {
         dispatch({ type: 'LOAD_BLOCKS', payload: [] })
       }
     }
-  }, [supabase, saveToDb])
+  }, [supabase, flushSave])
 
   const addBlock = useCallback((block) => {
     dispatch({ type: 'ADD_BLOCK', payload: block })
