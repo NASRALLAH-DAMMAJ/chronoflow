@@ -8,6 +8,7 @@ describe('initialState', () => {
       blocks: [],
       dateStr: '',
       loaded: false,
+      blocksModified: false,
       selectedId: null,
       completedDays: [],
     })

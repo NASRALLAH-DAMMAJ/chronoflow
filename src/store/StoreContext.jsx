@@ -85,7 +85,7 @@ export function StoreProvider({ children }) {
   }, [user, supabase])
 
   useEffect(() => {
-    if (!hasLoadedOnce.current || !user || !state.loaded) return
+    if (!hasLoadedOnce.current || !user || !state.loaded || !state.blocksModified) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
       saveToDb(state.dateStr, state.blocks)
@@ -97,7 +97,7 @@ export function StoreProvider({ children }) {
         saveTimerRef.current = null
       }
     }
-  }, [state.dateStr, state.blocks, user, state.loaded, saveToDb])
+  }, [state.dateStr, state.blocks, user, state.loaded, state.blocksModified, saveToDb])
 
   const goToDate = useCallback(async (date) => {
     const ds = getTodayStr(date)

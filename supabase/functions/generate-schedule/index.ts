@@ -107,9 +107,9 @@ export default {
 
     const existingBlocks = (explicitBlocks as ExplicitBlock[]) || [];
 
-    // Collect all blocks: start with non-recurring explicit blocks
+    // Collect all blocks: start with non-recurring explicit blocks (exclude sleep — always generated fresh)
     const resultBlocks: BlockOutput[] = existingBlocks
-      .filter((b) => !b.is_recurring)
+      .filter((b) => !b.is_recurring && b.category !== "sleep")
       .map((b) => ({
         id: b.id,
         user_id: b.user_id,
