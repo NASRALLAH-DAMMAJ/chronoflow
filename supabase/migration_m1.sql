@@ -2,6 +2,17 @@
 -- Run this in Supabase SQL Editor AFTER setup_remote_db.sql
 -- https://supabase.com/dashboard/project/dkuwoqqgdihmkadkiczu/sql/new
 
+-- 0. Add locked column to blocks table (required for lock/unlock feature)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'blocks' AND column_name = 'locked'
+  ) THEN
+    ALTER TABLE public.blocks ADD COLUMN locked boolean DEFAULT false;
+  END IF;
+END $$;
+
 -- 1. Add unique constraint on blocks(user_id, date, start_min)
 --    Prevents duplicate blocks at the same time for the same user on the same day
 DO $$

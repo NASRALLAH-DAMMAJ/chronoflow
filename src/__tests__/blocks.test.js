@@ -72,7 +72,6 @@ describe('blockToDb', () => {
       category: 'work',
       is_recurring: false,
       parent_rule_id: null,
-      locked: false,
     })
   })
 
@@ -92,13 +91,13 @@ describe('blockToDb', () => {
   it('includes locked field', () => {
     const block = { id: 'b4', start: 0, end: 60, label: 'Locked', category: 'work', locked: true }
     const result = blockToDb(block, '2026-07-05', 'user-1')
-    expect(result.locked).toBe(true)
+    expect(result.locked).toBeUndefined()
   })
 
   it('defaults locked to false', () => {
     const block = { id: 'b5', start: 0, end: 60, label: 'No lock', category: 'work' }
     const result = blockToDb(block, '2026-07-05', 'user-1')
-    expect(result.locked).toBe(false)
+    expect(result.locked).toBeUndefined()
   })
 
   it('throws on invalid duration', () => {

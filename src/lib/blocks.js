@@ -1,7 +1,7 @@
 import { MINUTES_IN_DAY, TABLES, BLOCK_CATEGORIES } from '../store/constants'
 import { withRetry, isAuthError } from './retry'
 
-const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,locked'
+const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id'
 
 export function validateBlockForDb(block) {
   if (!block) return 'Block is required'
@@ -38,7 +38,6 @@ export function blockToDb(block, dateStr, userId) {
     category: block.category,
     is_recurring: block.is_recurring || false,
     parent_rule_id: block.parent_rule_id || null,
-    locked: block.locked || false,
   }
 }
 

@@ -35,6 +35,23 @@ function getDefaultDateTo() {
   return new Date().toISOString().slice(0, 10)
 }
 
+const DATE_PRESETS = [
+  { label: '7d', days: 7 },
+  { label: '30d', days: 30 },
+  { label: '90d', days: 90 },
+  { label: '1y', days: 365 },
+]
+
+function getPresetRange(days) {
+  const to = new Date()
+  const from = new Date()
+  from.setDate(from.getDate() - days)
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  }
+}
+
 const tooltipContentStyle = {
   backgroundColor: 'var(--clr-surface)',
   border: '1px solid var(--clr-border)',
@@ -243,6 +260,28 @@ export default function AnalyticsPage() {
                 borderRadius: 6,
               }}
             />
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {DATE_PRESETS.map(preset => {
+              const range = getPresetRange(preset.days)
+              const isActive = dateFrom === range.from && dateTo === range.to
+              return (
+                <button
+                  key={preset.label}
+                  onClick={() => { setDateFrom(range.from); setDateTo(range.to) }}
+                  style={{
+                    padding: '5px 10px', fontSize: 11, fontWeight: isActive ? 600 : 400,
+                    fontFamily: 'var(--ff-body)',
+                    color: isActive ? '#fff' : 'var(--clr-text-secondary)',
+                    backgroundColor: isActive ? BRAND_COLOR : 'transparent',
+                    border: `1px solid ${isActive ? BRAND_COLOR : 'var(--clr-border)'}`,
+                    borderRadius: 4, cursor: 'pointer',
+                  }}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
           </div>
           <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignSelf: 'end' }}>
             <button onClick={() => handleDownload(ReportPDF)} style={{

@@ -50,24 +50,16 @@ export function StoreProvider({ children }) {
           console.error('[Store] migrateLocalStorage failed:', err)
         })
         if (userIdRef.current !== currentUser) return
-        taskQueue.add(
-          async ({ onProgress }) => {
-            onProgress(20)
-            const blocks = await fetchBlocks(supabase, today)
-            onProgress(100)
-            if (userIdRef.current !== currentUser) return
-            dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-          },
-          {
-            id: 'init-load',
-            label: 'Loading blocks...',
-            priority: 'high',
-            timeout: INIT_TIMEOUT_MS,
-          }
-        )
+        const blocks = await fetchBlocks(supabase, today)
+        if (userIdRef.current !== currentUser) return
+        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch (err) {
         console.error('[Store] Init failed:', err)
-        setDbError('Init failed: ' + err.message)
+        if (isAuthError(err)) {
+          setDbError('Session expired — please log in again')
+        } else {
+          setDbError('Init failed: ' + err.message)
+        }
         dispatch({ type: 'LOAD_BLOCKS', payload: [] })
       } finally {
         clearTimeout(initTimer)
