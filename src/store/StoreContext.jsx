@@ -24,6 +24,7 @@ export function StoreProvider({ children }) {
   const userIdRef = useRef(null)
   const hasLoadedOnce = useRef(false)
   const saveTimerRef = useRef(null)
+  const loadedFromServerRef = useRef(false)
   const stateRef = useRef(state)
   stateRef.current = state
 
@@ -36,11 +37,13 @@ export function StoreProvider({ children }) {
       await migrateLocalStorage(supabase, user.id)
       if (userIdRef.current !== currentUser) return
       try {
+        loadedFromServerRef.current = true
         const blocks = await fetchSchedule(supabase, today)
         if (userIdRef.current !== currentUser) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch {
         try {
+          loadedFromServerRef.current = true
           const blocks = await fetchBlocks(supabase, today)
           if (userIdRef.current !== currentUser) return
           dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
@@ -85,9 +88,14 @@ export function StoreProvider({ children }) {
   }, [user, supabase])
 
   useEffect(() => {
-    if (!hasLoadedOnce.current || !user || !state.loaded || !state.blocksModified) return
+    if (!hasLoadedOnce.current || !user || !state.loaded) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
+      if (loadedFromServerRef.current) {
+        loadedFromServerRef.current = false
+        saveTimerRef.current = null
+        return
+      }
       saveToDb(state.dateStr, state.blocks)
       saveTimerRef.current = null
     }, 300)
@@ -97,7 +105,7 @@ export function StoreProvider({ children }) {
         saveTimerRef.current = null
       }
     }
-  }, [state.dateStr, state.blocks, user, state.loaded, state.blocksModified, saveToDb])
+  }, [state.dateStr, state.blocks, user, state.loaded, saveToDb])
 
   const goToDate = useCallback(async (date) => {
     const ds = getTodayStr(date)
@@ -105,11 +113,13 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
     try {
+      loadedFromServerRef.current = true
       const blocks = await fetchSchedule(supabase, ds)
       if (gen !== genRef.current) return
       dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
     } catch {
       try {
+        loadedFromServerRef.current = true
         const blocks = await fetchBlocks(supabase, ds)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })

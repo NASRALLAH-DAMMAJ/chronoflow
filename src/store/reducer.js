@@ -9,17 +9,17 @@ export function blockReducer(state, action) {
   switch (action.type) {
     case 'ADD_BLOCK': {
       const block = createBlock(action.payload)
-      return { ...state, blocks: [...state.blocks, block], blocksModified: true }
+      return { ...state, blocks: [...state.blocks, block] }
     }
     case 'UPDATE_BLOCK': {
       const blocks = state.blocks.map(b =>
         b.id === action.payload.id ? { ...b, ...action.payload } : b
       )
-      return { ...state, blocks, blocksModified: true }
+      return { ...state, blocks }
     }
     case 'DELETE_BLOCK': {
       const blocks = state.blocks.filter(b => b.id !== action.payload.id)
-      return { ...state, blocks, blocksModified: true }
+      return { ...state, blocks }
     }
     case 'MOVE_BLOCK': {
       const { id, newStart } = action.payload
@@ -37,7 +37,6 @@ export function blockReducer(state, action) {
             ? { ...b, start: snappedStart % MINUTES_IN_DAY, end: newEnd % MINUTES_IN_DAY || MINUTES_IN_DAY }
             : b
         ),
-        blocksModified: true,
       }
     }
     case 'RESIZE_BLOCK': {
@@ -52,7 +51,6 @@ export function blockReducer(state, action) {
             ? { ...b, end: snappedEnd === b.start ? (b.start === 0 ? MINUTES_IN_DAY : b.start === MINUTES_IN_DAY ? 0 : b.end) : snappedEnd }
             : b
         ),
-        blocksModified: true,
       }
     }
     case 'RESIZE_BLOCK_START': {
@@ -67,14 +65,13 @@ export function blockReducer(state, action) {
             ? { ...b, start: snappedStart === b.end ? (b.end === 0 ? MINUTES_IN_DAY : b.end === MINUTES_IN_DAY ? 0 : b.start) : snappedStart }
             : b
         ),
-        blocksModified: true,
       }
     }
     case 'SET_DATE': {
-      return { ...state, dateStr: action.payload, loaded: false, blocksModified: false }
+      return { ...state, dateStr: action.payload, loaded: false }
     }
     case 'LOAD_BLOCKS': {
-      return { ...state, blocks: action.payload, loaded: true, blocksModified: false }
+      return { ...state, blocks: action.payload, loaded: true }
     }
     case 'SELECT_BLOCK': {
       return { ...state, selectedId: action.payload }
@@ -100,7 +97,6 @@ export const initialState = {
   blocks: [],
   dateStr: '',
   loaded: false,
-  blocksModified: false,
   selectedId: null,
   completedDays: [],
 }
