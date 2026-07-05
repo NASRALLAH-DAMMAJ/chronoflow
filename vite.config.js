@@ -15,13 +15,17 @@ export default defineConfig({
     exclude: ['e2e/**', 'node_modules/**'],
   },
   build: {
+    target: 'es2020',
     rollupOptions: {
       output: {
         manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
           recharts: ['recharts'],
-          react: ['react', 'react-dom'],
+          supabase: ['@supabase/supabase-js'],
+          pdf: ['@react-pdf/renderer'],
         },
       },
     },
+    chunkSizeWarningLimit: 600,
   },
 })

@@ -1,0 +1,22 @@
+{
+  "name": "ChronoFlow",
+  "short_name": "ChronoFlow",
+  "description": "See where your time actually goes. A 24-hour circular dial for tracking your day.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4A6FA5",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
