@@ -34,25 +34,39 @@ export function StoreProvider({ children }) {
     userIdRef.current = user.id
     const currentUser = user.id
     ;(async () => {
-      await migrateLocalStorage(supabase, user.id)
-      if (userIdRef.current !== currentUser) return
       try {
-        loadedFromServerRef.current = true
-        const blocks = await fetchSchedule(supabase, today)
+        await migrateLocalStorage(supabase, user.id).catch(err => {
+          console.error('[Store] migrateLocalStorage failed:', err)
+        })
         if (userIdRef.current !== currentUser) return
-        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-      } catch {
         try {
           loadedFromServerRef.current = true
-          const blocks = await fetchBlocks(supabase, today)
+          const blocks = await fetchSchedule(supabase, today)
           if (userIdRef.current !== currentUser) return
+          console.log('[Store] Loaded blocks from schedule:', blocks.length)
           dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-        } catch {
-          dispatch({ type: 'LOAD_BLOCKS', payload: [] })
+        } catch (scheduleErr) {
+          console.warn('[Store] fetchSchedule failed, falling back to fetchBlocks:', scheduleErr)
+          try {
+            loadedFromServerRef.current = true
+            const blocks = await fetchBlocks(supabase, today)
+            if (userIdRef.current !== currentUser) return
+            console.log('[Store] Loaded blocks from DB:', blocks.length)
+            dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+          } catch (blocksErr) {
+            console.error('[Store] fetchBlocks also failed:', blocksErr)
+            dispatch({ type: 'LOAD_BLOCKS', payload: [] })
+          }
+        }
+      } catch (err) {
+        console.error('[Store] Init failed:', err)
+        dispatch({ type: 'LOAD_BLOCKS', payload: [] })
+      } finally {
+        if (userIdRef.current === currentUser) {
+          hasLoadedOnce.current = true
+          dispatch({ type: 'SET_LOADING', payload: false })
         }
       }
-      hasLoadedOnce.current = true
-      dispatch({ type: 'SET_LOADING', payload: false })
     })()
   }, [user, supabase, today])
 
@@ -117,13 +131,15 @@ export function StoreProvider({ children }) {
       const blocks = await fetchSchedule(supabase, ds)
       if (gen !== genRef.current) return
       dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-    } catch {
+    } catch (scheduleErr) {
+      console.warn('[Store] goToDate fetchSchedule failed:', scheduleErr)
       try {
         loadedFromServerRef.current = true
         const blocks = await fetchBlocks(supabase, ds)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-      } catch {
+      } catch (blocksErr) {
+        console.error('[Store] goToDate fetchBlocks also failed:', blocksErr)
         dispatch({ type: 'LOAD_BLOCKS', payload: [] })
       }
     }
