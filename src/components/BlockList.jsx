@@ -2,6 +2,7 @@ import React from 'react'
 import { CATEGORY_COLORS, MINUTES_IN_DAY } from '../store/constants'
 import { Badge } from '../design-system/components'
 import { IconClock, IconEdit, IconArchive, IconTrash } from '../design-system/icons'
+import { Lock, Unlock } from 'lucide-react'
 import { minutesToStr, formatDuration } from '../utils'
 
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
@@ -123,6 +124,21 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               }}
             >
               <IconEdit />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); onToggleLock && onToggleLock(block.id) }}
+              aria-label={block.locked ? `Unlock ${block.label}` : `Lock ${block.label}`}
+              style={{
+                display: 'flex',
+                padding: 4,
+                border: 'none',
+                background: 'none',
+                color: block.locked ? '#D97706' : 'var(--clr-text-tertiary)',
+                cursor: 'pointer',
+                borderRadius: 4,
+              }}
+            >
+              {block.locked ? <Unlock size={18} /> : <Lock size={18} />}
             </button>
             <button
               onClick={e => { e.stopPropagation(); onArchiveBlock(block.id) }}
