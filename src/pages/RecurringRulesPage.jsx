@@ -27,6 +27,7 @@ export default function RecurringRulesPage() {
   const [rules, setRules] = useState([])
   const [editing, setEditing] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteBlockCount, setDeleteBlockCount] = useState(0)
 
@@ -34,7 +35,10 @@ export default function RecurringRulesPage() {
     fetchRules(supabase).then(data => {
       setRules(data)
       setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch(e => {
+      setError(e.message || 'Failed to load rules')
+      setLoading(false)
+    })
   }, [supabase])
 
   const handleSave = useCallback(async () => {
@@ -98,6 +102,28 @@ export default function RecurringRulesPage() {
     return (
       <div style={{ padding: 24, color: 'var(--clr-text-secondary)', fontSize: 14 }}>
         Loading rules...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: 'var(--sp-6) var(--sp-4)' }}>
+        <div style={{
+          backgroundColor: '#fee2e2', border: '1px solid #fca5a5',
+          color: '#991b1b', padding: '16px 20px', borderRadius: 8,
+          fontSize: 14,
+        }}>
+          <strong>Error:</strong> {error}
+          <button
+            onClick={() => { setError(null); setLoading(true); fetchRules(supabase).then(data => { setRules(data); setLoading(false) }).catch(e => { setError(e.message); setLoading(false) }) }}
+            style={{
+              marginLeft: 12, padding: '4px 12px', fontSize: 13,
+              backgroundColor: '#fff', border: '1px solid #fca5a5',
+              borderRadius: 4, cursor: 'pointer', color: '#991b1b',
+            }}
+          >Retry</button>
+        </div>
       </div>
     )
   }

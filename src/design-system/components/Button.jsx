@@ -66,8 +66,11 @@ export function Button({ variant = 'primary', size = 'md', children, onClick, di
           e.currentTarget.style.backgroundColor = variants[variant].backgroundColor
           e.currentTarget.style.border = variants[variant].border
           e.currentTarget.style.color = variants[variant].color
+          e.currentTarget.style.transform = 'scale(1)'
         }
       }}
+      onMouseDown={e => { if (!disabled) e.currentTarget.style.transform = 'scale(0.97)' }}
+      onMouseUp={e => { if (!disabled) e.currentTarget.style.transform = 'scale(1)' }}
       onFocus={e => { e.currentTarget.style.boxShadow = '0 0 0 3px var(--clr-focus)' }}
       onBlur={e => { e.currentTarget.style.boxShadow = 'none' }}
       {...props}

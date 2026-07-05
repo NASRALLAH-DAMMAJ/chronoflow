@@ -51,6 +51,7 @@ export default function AnalyticsPage() {
   const [blocks, setBlocks] = useState([])
   const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [dateFrom, setDateFrom] = useState(getDefaultDateFrom)
   const [dateTo, setDateTo] = useState(getDefaultDateTo)
 
@@ -59,6 +60,7 @@ export default function AnalyticsPage() {
     let cancelled = false
     async function load() {
       setLoading(true)
+      setError(null)
       try {
         const [blockData, settingsData] = await Promise.all([
           fetchBlocksForRange(supabase, user.id, dateFrom, dateTo),
@@ -70,6 +72,7 @@ export default function AnalyticsPage() {
         }
       } catch (e) {
         console.error('Failed to load analytics:', e)
+        if (!cancelled) setError(e.message || 'Failed to load analytics')
       }
       if (!cancelled) setLoading(false)
     }
@@ -167,6 +170,30 @@ export default function AnalyticsPage() {
     return (
       <div style={{ padding: 24, color: 'var(--clr-text-secondary)', fontSize: 14 }}>
         Loading analytics...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: 'var(--sp-6) var(--sp-4)' }}>
+        <div style={{
+          backgroundColor: '#fee2e2', border: '1px solid #fca5a5',
+          color: '#991b1b', padding: '16px 20px', borderRadius: 8,
+          fontSize: 14, marginBottom: 16,
+        }}>
+          <strong>Error:</strong> {error}
+          <button
+            onClick={() => { setError(null); setLoading(true) }}
+            style={{
+              marginLeft: 12, padding: '4px 12px', fontSize: 13,
+              backgroundColor: '#fff', border: '1px solid #fca5a5',
+              borderRadius: 4, cursor: 'pointer', color: '#991b1b',
+            }}
+          >
+            Retry
+          </button>
+        </div>
       </div>
     )
   }

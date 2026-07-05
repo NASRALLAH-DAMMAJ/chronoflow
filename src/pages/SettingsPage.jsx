@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [theme, setTheme] = useState('system')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
@@ -30,7 +31,10 @@ export default function SettingsPage() {
         setTheme(data.theme)
       }
       setLoading(false)
-    }).catch(() => setLoading(false))
+    }).catch(e => {
+      setError(e.message || 'Failed to load settings')
+      setLoading(false)
+    })
   }, [supabase, user])
 
   const handleSave = useCallback(async () => {
@@ -54,6 +58,28 @@ export default function SettingsPage() {
     return (
       <div style={{ padding: 24, color: 'var(--clr-text-secondary)', fontSize: 14 }}>
         Loading settings...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: 'var(--sp-6) var(--sp-4)' }}>
+        <div style={{
+          backgroundColor: '#fee2e2', border: '1px solid #fca5a5',
+          color: '#991b1b', padding: '16px 20px', borderRadius: 8,
+          fontSize: 14,
+        }}>
+          <strong>Error:</strong> {error}
+          <button
+            onClick={() => { setError(null); setLoading(true) }}
+            style={{
+              marginLeft: 12, padding: '4px 12px', fontSize: 13,
+              backgroundColor: '#fff', border: '1px solid #fca5a5',
+              borderRadius: 4, cursor: 'pointer', color: '#991b1b',
+            }}
+          >Retry</button>
+        </div>
       </div>
     )
   }

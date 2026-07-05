@@ -18,6 +18,7 @@ export default function ArchivePage() {
   const { supabase, user } = useSupabase()
   const [blocks, setBlocks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [category, setCategory] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -25,6 +26,7 @@ export default function ArchivePage() {
   const load = useCallback(async () => {
     if (!user) return
     setLoading(true)
+    setError(null)
     try {
       const filters = {}
       if (category) filters.category = category
@@ -34,6 +36,7 @@ export default function ArchivePage() {
       setBlocks(data)
     } catch (e) {
       console.error('Failed to load archived blocks:', e)
+      setError(e.message || 'Failed to load archived blocks')
     }
     setLoading(false)
   }, [supabase, user, category, dateFrom, dateTo])
@@ -116,6 +119,21 @@ export default function ArchivePage() {
           <Button variant="primary" size="sm" onClick={load}>Filter</Button>
         </div>
       </Card>
+
+      {error && (
+        <div style={{
+          backgroundColor: '#fee2e2', border: '1px solid #fca5a5',
+          color: '#991b1b', padding: '12px 16px', borderRadius: 8,
+          fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <strong>Error:</strong> {error}
+          <button onClick={load} style={{
+            marginLeft: 'auto', padding: '4px 10px', fontSize: 12,
+            backgroundColor: '#fff', border: '1px solid #fca5a5',
+            borderRadius: 4, cursor: 'pointer', color: '#991b1b',
+          }}>Retry</button>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ padding: 24, color: 'var(--clr-text-secondary)', fontSize: 14 }}>
