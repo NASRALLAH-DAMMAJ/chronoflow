@@ -79,25 +79,10 @@ function AppContent() {
   }
 
   function handlePlaceOnDial(startMin, endMin) {
-    const a = snapToGrid(startMin, SNAP_MINUTES)
-    const b = snapToGrid(endMin, SNAP_MINUTES)
-    let start, end
-    if (b >= a) {
-      start = a
-      end = b
-    } else {
-      const wrap = b + MINUTES_IN_DAY - a
-      const direct = a - b
-      if (wrap <= direct) {
-        start = a
-        end = b
-      } else {
-        start = b
-        end = a
-      }
-    }
-    if (end === start) end = start + SNAP_MINUTES
-    end = Math.min(end, MINUTES_IN_DAY)
+    let start = snapToGrid(startMin, SNAP_MINUTES)
+    let end = snapToGrid(endMin, SNAP_MINUTES)
+
+    if (end === start) end = (start + SNAP_MINUTES) % MINUTES_IN_DAY
     haptic('success')
     addBlock({
       id: crypto.randomUUID(),

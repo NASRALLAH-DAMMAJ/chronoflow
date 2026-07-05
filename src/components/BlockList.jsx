@@ -69,8 +69,8 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             }}
           >
             <div style={{ width: 3, height: 24, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
-            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}>
+            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '1 1 0', minWidth: 0 }}>
                 {block.label}
               </span>
               <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
