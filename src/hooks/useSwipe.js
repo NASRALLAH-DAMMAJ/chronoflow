@@ -1,35 +1,32 @@
 import { useRef, useCallback } from 'react'
 
-const SWIPE_THRESHOLD = 50
-const SWIPE_TIMEOUT = 300
-
-export function useSwipe({ onSwipeLeft, onSwipeRight }) {
+export function useSwipe({ onSwipeLeft, onSwipeRight, threshold = 50 } = {}) {
   const touchStart = useRef(null)
-  const touchTime = useRef(null)
 
   const onTouchStart = useCallback((e) => {
-    const touch = e.touches[0]
-    touchStart.current = { x: touch.clientX, y: touch.clientY }
-    touchTime.current = Date.now()
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
   }, [])
 
   const onTouchEnd = useCallback((e) => {
     if (!touchStart.current) return
-    const touch = e.changedTouches[0]
-    const dx = touch.clientX - touchStart.current.x
-    const dy = touch.clientY - touchStart.current.y
-    const dt = Date.now() - touchTime.current
-
+    const dx = e.changedTouches[0].clientX - touchStart.current.x
+    const dy = e.changedTouches[0].clientY - touchStart.current.y
     touchStart.current = null
-    touchTime.current = null
-
-    if (dt > SWIPE_TIMEOUT) return
-    if (Math.abs(dx) < SWIPE_THRESHOLD) return
-    if (Math.abs(dy) > Math.abs(dx)) return
-
-    if (dx > 0 && onSwipeRight) onSwipeRight()
-    else if (dx < 0 && onSwipeLeft) onSwipeLeft()
-  }, [onSwipeLeft, onSwipeRight])
+    if (Math.abs(dx) < threshold || Math.abs(dx) < Math.abs(dy)) return
+    if (dx > 0) onSwipeRight?.()
+    else onSwipeLeft?.()
+  }, [onSwipeLeft, onSwipeRight, threshold])
 
   return { onTouchStart, onTouchEnd }
+}
+
+export function haptic(style = 'light') {
+  if (!navigator.vibrate) return
+  switch (style) {
+    case 'light': navigator.vibrate(10); break
+    case 'medium': navigator.vibrate(20); break
+    case 'heavy': navigator.vibrate(40); break
+    case 'error': navigator.vibrate([30, 50, 30]); break
+    case 'success': navigator.vibrate([10, 30, 10]); break
+  }
 }

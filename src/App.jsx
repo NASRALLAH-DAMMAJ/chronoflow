@@ -15,7 +15,7 @@ import { useSupabase } from './lib/SupabaseContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
-import { useSwipe } from './hooks/useSwipe'
+import { useSwipe, haptic } from './hooks/useSwipe'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 
@@ -47,6 +47,7 @@ function AppContent() {
     if (block?.locked) {
       if (!window.confirm(`"${block.label}" is locked. Delete anyway?`)) return
     }
+    haptic('medium')
     deleteBlock(blockId)
     toast.success('Block deleted')
   }
@@ -56,6 +57,7 @@ function AppContent() {
     if (block?.locked) {
       if (!window.confirm(`"${block.label}" is locked. Archive anyway?`)) return
     }
+    haptic('medium')
     archiveBlock(blockId)
     toast.success('Block archived')
   }
@@ -96,6 +98,7 @@ function AppContent() {
     }
     if (end === start) end = start + SNAP_MINUTES
     end = Math.min(end, MINUTES_IN_DAY)
+    haptic('success')
     addBlock({
       id: crypto.randomUUID(),
       start: start % MINUTES_IN_DAY,
@@ -325,7 +328,7 @@ function AppContent() {
                 Streak: <strong>{streak}</strong> {streak === 1 ? 'day' : 'days'}
               </div>
               {isToday && !completedDays.includes(dateStr) && (
-                <Button variant="primary" size="sm" onClick={() => { completeDay(dateStr); toast.success('Day completed! Streak +1') }}>
+                <Button variant="primary" size="sm" onClick={() => { haptic('success'); completeDay(dateStr); toast.success('Day completed! Streak +1') }}>
                   Complete day
                 </Button>
               )}
