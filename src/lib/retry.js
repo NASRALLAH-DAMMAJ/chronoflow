@@ -14,6 +14,7 @@ export async function withRetry(fn, options = {}) {
       return await fn()
     } catch (err) {
       lastError = err
+      if (isAuthError(err)) throw err
       if (attempt < maxAttempts) {
         const delay = baseDelayMs * Math.pow(2, attempt - 1)
         if (onRetry) onRetry({ attempt, error: err, delay })
