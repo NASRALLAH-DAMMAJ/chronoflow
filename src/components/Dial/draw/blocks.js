@@ -28,7 +28,7 @@ export function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zo
     ctx.closePath()
 
     ctx.fillStyle = block.color || CATEGORY_COLORS.work
-    ctx.globalAlpha = isSelected ? 0.85 : 0.6
+    ctx.globalAlpha = isSelected ? 0.85 : (block.locked ? 0.5 : 0.6)
     ctx.fill()
     ctx.globalAlpha = 1
 
@@ -57,7 +57,8 @@ export function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zo
       const displayLabel = block.label.length > 14
         ? block.label.slice(0, 13) + '…'
         : block.label
-      ctx.fillText(displayLabel + (block.is_recurring ? ' ↻' : ''), 0, 0)
+      const lockIcon = block.locked ? ' 🔒' : ''
+      ctx.fillText(displayLabel + lockIcon + (block.is_recurring ? ' ↻' : ''), 0, 0)
       ctx.restore()
     }
   }

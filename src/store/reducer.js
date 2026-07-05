@@ -1,8 +1,8 @@
 import { MINUTES_IN_DAY, LS_KEYS, DEFAULT_CATEGORY } from './constants'
 import { formatDate, snapToGrid } from '../utils'
 
-export function createBlock({ id, start, end, label, category = DEFAULT_CATEGORY, tags = [], energy }) {
-  return { id, start, end, label, category, tags, energy, createdAt: Date.now() }
+export function createBlock({ id, start, end, label, category = DEFAULT_CATEGORY, tags = [], energy, locked = false }) {
+  return { id, start, end, label, category, tags, energy, locked, createdAt: Date.now() }
 }
 
 export function blockReducer(state, action) {
@@ -64,6 +64,15 @@ export function blockReducer(state, action) {
           b.id === id
             ? { ...b, start: snappedStart === b.end ? (b.end === 0 ? MINUTES_IN_DAY : b.end === MINUTES_IN_DAY ? 0 : b.start) : snappedStart }
             : b
+        ),
+      }
+    }
+    case 'TOGGLE_LOCK': {
+      const { id } = action.payload
+      return {
+        ...state,
+        blocks: state.blocks.map(b =>
+          b.id === id ? { ...b, locked: !b.locked } : b
         ),
       }
     }

@@ -5,6 +5,8 @@ import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
 import { BlockList } from './components/BlockList'
 import { Onboarding } from './components/Onboarding'
+import TaskIndicator from './components/TaskIndicator'
+import { ToastProvider, useToast } from './components/Toast'
 import { Button, Badge, Card } from './design-system/components'
 import { useDarkMode } from './design-system/hooks/useDarkMode'
 import { IconPlus, IconSun, IconMoon, IconChevronLeft, IconChevronRight } from './design-system/icons'
@@ -26,7 +28,8 @@ function AppContent() {
   const navigate = useNavigate()
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
-  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, goToDate, completeDay } = useStore()
+  const toast = useToast()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
   const [placement, setPlacement] = useState(null)
@@ -41,14 +44,20 @@ function AppContent() {
 
   function handleDelete(blockId) {
     const block = blocks.find(b => b.id === blockId)
-    if (block?.category === SLEEP_CATEGORY) return
+    if (block?.locked) {
+      if (!window.confirm(`"${block.label}" is locked. Delete anyway?`)) return
+    }
     deleteBlock(blockId)
+    toast.success('Block deleted')
   }
 
   function handleArchive(blockId) {
     const block = blocks.find(b => b.id === blockId)
-    if (block?.category === SLEEP_CATEGORY) return
+    if (block?.locked) {
+      if (!window.confirm(`"${block.label}" is locked. Archive anyway?`)) return
+    }
     archiveBlock(blockId)
+    toast.success('Block archived')
   }
 
   function handleEdit(block) {
@@ -95,6 +104,7 @@ function AppContent() {
       category: placement.category,
       tags: [],
     })
+    toast.success('Block added')
     setPlacement(null)
   }
 
@@ -289,6 +299,7 @@ function AppContent() {
                   onUpdateBlock={updateBlock}
                   onPlaceBlock={handlePlaceBlock}
                   onClose={closeForm}
+                  onToggleLock={editingBlock ? toggleLock : undefined}
                 />
               </div>
             )}
@@ -301,6 +312,7 @@ function AppContent() {
                 onDeleteBlock={handleDelete}
                 onArchiveBlock={handleArchive}
                 onEditBlock={handleEdit}
+                onToggleLock={toggleLock}
                 contextBlockId={contextBlockId}
                 onContextMenu={setContextBlockId}
                 contextRef={contextRef}
@@ -313,7 +325,7 @@ function AppContent() {
                 Streak: <strong>{streak}</strong> {streak === 1 ? 'day' : 'days'}
               </div>
               {isToday && !completedDays.includes(dateStr) && (
-                <Button variant="primary" size="sm" onClick={() => completeDay(dateStr)}>
+                <Button variant="primary" size="sm" onClick={() => { completeDay(dateStr); toast.success('Day completed! Streak +1') }}>
                   Complete day
                 </Button>
               )}
@@ -354,9 +366,11 @@ export default function App() {
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <OfflineBanner />
-      <React.Suspense fallback={<PageSpinner />}>
-        <Routes>
+      <ToastProvider>
+        <OfflineBanner />
+        <TaskIndicator />
+        <React.Suspense fallback={<PageSpinner />}>
+          <Routes>
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
           <Route path={ROUTES.SETTINGS} element={
             <ProtectedRoute>
@@ -397,6 +411,7 @@ export default function App() {
           } />
         </Routes>
       </React.Suspense>
+      </ToastProvider>
     </>
   )
 }

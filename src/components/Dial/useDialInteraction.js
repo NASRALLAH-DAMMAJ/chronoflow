@@ -108,6 +108,11 @@ export function useDialInteraction({ blocks, onMoveBlock, onResizeBlock, onResiz
     }
 
     onSelectBlock(hit.block.id)
+
+    if (hit.block.locked) {
+      return
+    }
+
     const wm = pointerToWorldMinutes(x, y, cx, cy)
     dragRef.current = {
       ...hit,

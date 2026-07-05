@@ -4,8 +4,12 @@ import { getTodayStr } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock } from '../lib/blocks'
 import { migrateLocalStorage } from '../lib/migrate'
+import { isAuthError } from '../lib/retry'
+import { taskQueue } from '../lib/taskQueue'
 
 const StoreContext = createContext(null)
+
+const INIT_TIMEOUT_MS = 8000
 
 export function StoreProvider({ children }) {
   const { supabase, user } = useSupabase()
@@ -23,6 +27,8 @@ export function StoreProvider({ children }) {
   const userIdRef = useRef(null)
   const hasLoadedOnce = useRef(false)
   const saveTimerRef = useRef(null)
+  const saveQueueRef = useRef([])
+  const savingRef = useRef(false)
   const stateRef = useRef(state)
   stateRef.current = state
   const [dbError, setDbError] = useState(null)
@@ -32,44 +38,77 @@ export function StoreProvider({ children }) {
     initFetched.current = true
     userIdRef.current = user.id
     const currentUser = user.id
+    const initTimer = setTimeout(() => {
+      if (userIdRef.current === currentUser) {
+        setDbError('Init timed out — check your connection')
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
+    }, INIT_TIMEOUT_MS)
     ;(async () => {
       try {
         await migrateLocalStorage(supabase, user.id).catch(err => {
           console.error('[Store] migrateLocalStorage failed:', err)
         })
         if (userIdRef.current !== currentUser) return
-        try {
-          const blocks = await fetchBlocks(supabase, today)
-          if (userIdRef.current !== currentUser) return
-          console.log('[Store] Loaded blocks from DB:', blocks.length)
-          dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-        } catch (blocksErr) {
-          console.error('[Store] fetchBlocks failed:', blocksErr)
-          setDbError('Cannot load blocks: ' + (blocksErr.message || 'check DB tables'))
-          dispatch({ type: 'LOAD_BLOCKS', payload: [] })
-        }
+        taskQueue.add(
+          async ({ onProgress }) => {
+            onProgress(20)
+            const blocks = await fetchBlocks(supabase, today)
+            onProgress(100)
+            if (userIdRef.current !== currentUser) return
+            dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+          },
+          {
+            id: 'init-load',
+            label: 'Loading blocks...',
+            priority: 'high',
+            timeout: INIT_TIMEOUT_MS,
+          }
+        )
       } catch (err) {
         console.error('[Store] Init failed:', err)
         setDbError('Init failed: ' + err.message)
         dispatch({ type: 'LOAD_BLOCKS', payload: [] })
       } finally {
+        clearTimeout(initTimer)
         if (userIdRef.current === currentUser) {
           hasLoadedOnce.current = true
           dispatch({ type: 'SET_LOADING', payload: false })
         }
       }
     })()
+    return () => clearTimeout(initTimer)
   }, [user, supabase, today])
+
+  const processSaveQueue = useCallback(async () => {
+    if (savingRef.current || saveQueueRef.current.length === 0) return
+    savingRef.current = true
+    while (saveQueueRef.current.length > 0) {
+      const { dateStr, blocks, userId, resolve } = saveQueueRef.current.pop()
+      try {
+        await upsertBlocks(supabase, dateStr, blocks, userId)
+        setDbError(null)
+        resolve()
+      } catch (err) {
+        console.error('[Store] Save failed:', err)
+        if (isAuthError(err)) {
+          setDbError('Session expired — please log in again')
+        } else {
+          setDbError('Save failed: ' + (err.message || 'unknown error'))
+        }
+        resolve()
+      }
+    }
+    savingRef.current = false
+  }, [supabase])
 
   const saveToDb = useCallback((dateStr, blocks) => {
     if (!user || !supabase || !dateStr) return Promise.resolve()
-    return upsertBlocks(supabase, dateStr, blocks, user.id).then(() => {
-      setDbError(null)
-    }).catch(err => {
-      console.error('[Store] Failed to save blocks:', err)
-      setDbError('Save failed: ' + (err.message || 'unknown error'))
+    return new Promise(resolve => {
+      saveQueueRef.current.push({ dateStr, blocks, userId: user.id, resolve })
+      processSaveQueue()
     })
-  }, [user, supabase])
+  }, [user, supabase, processSaveQueue])
 
   const flushSave = useCallback(() => {
     if (saveTimerRef.current) {
@@ -115,14 +154,20 @@ export function StoreProvider({ children }) {
     await flushSave()
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
-    try {
-      const blocks = await fetchBlocks(supabase, ds)
-      if (gen !== genRef.current) return
-      dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-    } catch (blocksErr) {
-      console.error('[Store] goToDate fetchBlocks failed:', blocksErr)
-      dispatch({ type: 'LOAD_BLOCKS', payload: [] })
-    }
+    taskQueue.add(
+      async ({ onProgress }) => {
+        onProgress(10)
+        const blocks = await fetchBlocks(supabase, ds)
+        onProgress(100)
+        if (gen !== genRef.current) return
+        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+      },
+      {
+        label: 'Loading day...',
+        priority: 'high',
+        timeout: 15000,
+      }
+    )
   }, [supabase, flushSave])
 
   const addBlock = useCallback((block) => {
@@ -135,16 +180,22 @@ export function StoreProvider({ children }) {
 
   const deleteBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
-    deleteBlock(supabase, id).catch(err => {
-      console.error('[Store] Failed to delete block:', err)
-    })
+    taskQueue.add(
+      async () => {
+        await deleteBlock(supabase, id)
+      },
+      { label: 'Deleting block...', priority: 'normal', timeout: 10000 }
+    )
   }, [supabase])
 
   const archiveBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
-    archiveBlock(supabase, id).catch(err => {
-      console.error('[Store] Failed to archive block:', err)
-    })
+    taskQueue.add(
+      async () => {
+        await archiveBlock(supabase, id)
+      },
+      { label: 'Archiving block...', priority: 'normal', timeout: 10000 }
+    )
   }, [supabase])
 
   const moveBlock = useCallback((id, newStart) => {
@@ -161,6 +212,10 @@ export function StoreProvider({ children }) {
 
   const selectBlock = useCallback((id) => {
     dispatch({ type: 'SELECT_BLOCK', payload: id })
+  }, [])
+
+  const toggleLock = useCallback((id) => {
+    dispatch({ type: 'TOGGLE_LOCK', payload: { id } })
   }, [])
 
   useEffect(() => {
@@ -191,8 +246,9 @@ export function StoreProvider({ children }) {
     resizeBlock,
     resizeBlockStart,
     selectBlock,
+    toggleLock,
     completeDay,
-  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, completeDay])
+  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, completeDay])
 
   return (
     <StoreContext.Provider value={value}>

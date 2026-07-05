@@ -44,6 +44,20 @@ describe('blockReducer', () => {
       const result = blockReducer(state, { type: 'ADD_BLOCK', payload })
       expect(result.blocks[0].category).toBe('other')
     })
+
+    it('defaults locked to false', () => {
+      const state = { ...initialState }
+      const payload = { id: 'b3', start: 0, end: 60, label: 'No lock' }
+      const result = blockReducer(state, { type: 'ADD_BLOCK', payload })
+      expect(result.blocks[0].locked).toBe(false)
+    })
+
+    it('accepts locked true', () => {
+      const state = { ...initialState }
+      const payload = { id: 'b4', start: 0, end: 60, label: 'Locked', locked: true }
+      const result = blockReducer(state, { type: 'ADD_BLOCK', payload })
+      expect(result.blocks[0].locked).toBe(true)
+    })
   })
 
   describe('UPDATE_BLOCK', () => {
@@ -207,6 +221,36 @@ describe('blockReducer', () => {
       const state = { ...initialState, loading: true }
       const result = blockReducer(state, { type: 'SET_LOADING', payload: false })
       expect(result.loading).toBe(false)
+    })
+  })
+
+  describe('TOGGLE_LOCK', () => {
+    it('toggles locked from false to true', () => {
+      const state = { ...initialState, blocks: [{ id: 'b1', start: 0, end: 60, label: 'A', category: 'other', locked: false }] }
+      const result = blockReducer(state, { type: 'TOGGLE_LOCK', payload: { id: 'b1' } })
+      expect(result.blocks[0].locked).toBe(true)
+    })
+
+    it('toggles locked from true to false', () => {
+      const state = { ...initialState, blocks: [{ id: 'b1', start: 0, end: 60, label: 'A', category: 'other', locked: true }] }
+      const result = blockReducer(state, { type: 'TOGGLE_LOCK', payload: { id: 'b1' } })
+      expect(result.blocks[0].locked).toBe(false)
+    })
+
+    it('does not affect other blocks', () => {
+      const state = { ...initialState, blocks: [
+        { id: 'b1', start: 0, end: 60, label: 'A', category: 'other', locked: false },
+        { id: 'b2', start: 60, end: 120, label: 'B', category: 'other', locked: false },
+      ] }
+      const result = blockReducer(state, { type: 'TOGGLE_LOCK', payload: { id: 'b1' } })
+      expect(result.blocks[0].locked).toBe(true)
+      expect(result.blocks[1].locked).toBe(false)
+    })
+
+    it('handles missing id gracefully', () => {
+      const state = { ...initialState, blocks: [{ id: 'b1', start: 0, end: 60, label: 'A', category: 'other', locked: false }] }
+      const result = blockReducer(state, { type: 'TOGGLE_LOCK', payload: { id: 'nonexistent' } })
+      expect(result.blocks[0].locked).toBe(false)
     })
   })
 })

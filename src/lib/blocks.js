@@ -1,20 +1,44 @@
-import { MINUTES_IN_DAY, TABLES } from '../store/constants'
-import { withRetry } from './retry'
+import { MINUTES_IN_DAY, TABLES, BLOCK_CATEGORIES } from '../store/constants'
+import { withRetry, isAuthError } from './retry'
 
-const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id'
+const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,locked'
+
+export function validateBlockForDb(block) {
+  if (!block) return 'Block is required'
+  if (!block.label || typeof block.label !== 'string' || block.label.trim().length === 0) {
+    return 'Label is required'
+  }
+  if (block.label.length > 100) return 'Label must be 100 characters or less'
+  if (!block.category || !BLOCK_CATEGORIES.includes(block.category)) {
+    return `Invalid category: ${block.category}`
+  }
+  if (typeof block.start !== 'number' || block.start < 0 || block.start >= MINUTES_IN_DAY) {
+    return `Invalid start: ${block.start}`
+  }
+  if (typeof block.end !== 'number' || block.end < 0 || block.end > MINUTES_IN_DAY) {
+    return `Invalid end: ${block.end}`
+  }
+  if (block.start === block.end) return 'Block must have a duration'
+  return null
+}
 
 export function blockToDb(block, dateStr, userId) {
   const wraps = block.end <= block.start
+  const duration = wraps ? block.end + MINUTES_IN_DAY - block.start : block.end - block.start
+  if (duration <= 0 || duration > MINUTES_IN_DAY) {
+    throw new Error(`Invalid block duration: ${duration} minutes`)
+  }
   return {
     id: block.id,
     user_id: userId,
     date: dateStr,
-    start_min: block.start,
-    duration: wraps ? block.end + MINUTES_IN_DAY - block.start : block.end - block.start,
-    label: block.label,
+    start_min: Math.round(block.start),
+    duration: Math.round(duration),
+    label: block.label.trim(),
     category: block.category,
     is_recurring: block.is_recurring || false,
     parent_rule_id: block.parent_rule_id || null,
+    locked: block.locked || false,
   }
 }
 
@@ -28,6 +52,7 @@ export function blockFromDb(row) {
     category: row.category,
     is_recurring: row.is_recurring || false,
     parent_rule_id: row.parent_rule_id || null,
+    locked: row.locked || false,
   }
 }
 
@@ -38,6 +63,7 @@ export async function fetchBlocks(supabase, dateStr) {
       .select(DB_FIELDS)
       .eq('date', dateStr)
       .eq('archived', false)
+      .order('start_min', { ascending: true })
 
     if (error) throw error
     return (data || []).map(blockFromDb)
@@ -46,11 +72,31 @@ export async function fetchBlocks(supabase, dateStr) {
 
 export async function upsertBlocks(supabase, dateStr, blocks, userId) {
   if (!userId) throw new Error('userId required for upsertBlocks')
+  if (!blocks || blocks.length === 0) return
+
+  const errors = []
+  const validBlocks = []
+  for (const block of blocks) {
+    const err = validateBlockForDb(block)
+    if (err) {
+      errors.push({ block: block.label || block.id, error: err })
+    } else {
+      validBlocks.push(block)
+    }
+  }
+  if (errors.length > 0) {
+    console.error('[blocks] Validation errors:', errors)
+  }
+  if (validBlocks.length === 0) return
+
   return withRetry(async () => {
-    const dbBlocks = blocks.map(b => blockToDb(b, dateStr, userId))
+    const dbBlocks = validBlocks.map(b => blockToDb(b, dateStr, userId))
     const { error } = await supabase
       .from(TABLES.BLOCKS)
-      .upsert(dbBlocks, { onConflict: 'id' })
+      .upsert(dbBlocks, {
+        onConflict: 'user_id,date,start_min',
+        ignoreDuplicates: false,
+      })
 
     if (error) throw error
   })
@@ -71,6 +117,7 @@ export async function fetchBlocksByRule(supabase, ruleId) {
 }
 
 export async function deleteBlock(supabase, id) {
+  if (!id) throw new Error('Block id required for delete')
   return withRetry(async () => {
     const { error } = await supabase
       .from(TABLES.BLOCKS)
@@ -82,6 +129,7 @@ export async function deleteBlock(supabase, id) {
 }
 
 export async function archiveBlock(supabase, id) {
+  if (!id) throw new Error('Block id required for archive')
   return withRetry(async () => {
     const { error } = await supabase
       .from(TABLES.BLOCKS)
@@ -93,6 +141,7 @@ export async function archiveBlock(supabase, id) {
 }
 
 export async function restoreBlock(supabase, id) {
+  if (!id) throw new Error('Block id required for restore')
   return withRetry(async () => {
     const { error } = await supabase
       .from(TABLES.BLOCKS)
@@ -103,7 +152,7 @@ export async function restoreBlock(supabase, id) {
   })
 }
 
-const ARCHIVED_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,archived'
+const ARCHIVED_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,archived,locked'
 
 export function archivedBlockFromDb(row) {
   const end = row.start_min + row.duration
@@ -116,6 +165,7 @@ export function archivedBlockFromDb(row) {
     category: row.category,
     is_recurring: row.is_recurring || false,
     parent_rule_id: row.parent_rule_id || null,
+    locked: row.locked || false,
   }
 }
 

@@ -3,7 +3,7 @@ import { Button } from '../../design-system/components'
 import { BLOCK_CATEGORIES, MINUTES_IN_DAY, SNAP_MINUTES, DEFAULT_BLOCK_CATEGORY } from '../../store/constants'
 import { TimeBar } from './TimeBar'
 
-export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
+export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose, onToggleLock }) {
   const isEditing = !!block
   const [label, setLabel] = useState(block ? block.label : '')
   const [startMin, setStartMin] = useState(block ? block.start : 540)
@@ -104,6 +104,27 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose }) {
       </div>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+        {isEditing && onToggleLock && (
+          <button
+            type="button"
+            onClick={() => onToggleLock(block.id)}
+            style={{
+              padding: '6px 12px',
+              fontSize: 13,
+              fontFamily: 'var(--ff-body)',
+              color: block.locked ? '#D97706' : 'var(--clr-text-secondary)',
+              backgroundColor: 'transparent',
+              border: '1px solid var(--clr-border)',
+              borderRadius: 6,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            {block.locked ? '🔓 Unlock' : '🔒 Lock'}
+          </button>
+        )}
         {onClose && <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>}
         <Button variant="primary" type="submit" disabled={!label.trim()}>{isEditing ? 'Update' : 'Next: Place on dial'}</Button>
       </div>
