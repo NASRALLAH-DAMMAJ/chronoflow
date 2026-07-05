@@ -1,0 +1,116 @@
+{
+  "app": { "name": "ChronoFlow", "tagline": "Ve a dónde va tu tiempo realmente" },
+  "nav": { "home": "Inicio", "analytics": "Analíticas", "archive": "Archivo", "rules": "Reglas", "settings": "Ajustes", "signOut": "Cerrar sesión" },
+  "dial": {
+    "addBlock": "Agregar bloque",
+    "noBlocks": "Sin bloques aún",
+    "tapToAdd": "Toca Agregar o haz clic en el dial para planificar tu día",
+    "currentTime": "Hora actual",
+    "blocksScheduled": "{{count}} bloque programado",
+    "blocksScheduled_plural": "{{count}} bloques programados"
+  },
+  "block": {
+    "label": "Etiqueta",
+    "category": "Categoría",
+    "start": "Inicio",
+    "end": "Fin",
+    "duration": "Duración",
+    "locked": "Bloqueado",
+    "unlock": "Desbloquear",
+    "delete": "Eliminar",
+    "archive": "Archivar",
+    "edit": "Editar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirmDelete": "¿Eliminar este bloque?",
+    "confirmArchive": "¿Archivar este bloque?"
+  },
+  "categories": {
+    "work": "Trabajo",
+    "study": "Estudio",
+    "exercise": "Ejercicio",
+    "creative": "Creativo",
+    "social": "Social",
+    "rest": "Descanso",
+    "sleep": "Sueño",
+    "other": "Otro"
+  },
+  "analytics": {
+    "title": "Analíticas",
+    "totalHours": "Horas totales",
+    "avgHoursPerDay": "Promedio hrs/día",
+    "topCategory": "Categoría principal",
+    "daysTracked": "Días con bloques",
+    "categoryBreakdown": "Desglose por categoría",
+    "dailyTotals": "Totales diarios",
+    "noData": "Sin datos para el período seleccionado"
+  },
+  "archive": {
+    "title": "Archivo",
+    "empty": "Sin bloques archivados",
+    "emptyDesc": "Los bloques que archives aparecerán aquí.",
+    "restore": "Restaurar",
+    "filter": "Filtrar"
+  },
+  "rules": {
+    "title": "Reglas recurrentes",
+    "addRule": "Agregar regla",
+    "empty": "Sin reglas recurrentes",
+    "emptyDesc": "Crea una regla para generar bloques automáticamente en días específicos.",
+    "delete": "Eliminar",
+    "edit": "Editar"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "sleepSchedule": "Horario de sueño",
+    "bedtime": "Hora de dormir",
+    "wakeUp": "Hora de despertar",
+    "theme": "Tema",
+    "system": "Sistema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "save": "Guardar ajustes",
+    "saved": "Guardado",
+    "profile": "Perfil",
+    "dataExport": "Exportar datos",
+    "exportJSON": "Exportar JSON (todos los datos)",
+    "exportCSV": "Exportar CSV (todos los bloques)",
+    "dataImport": "Importar datos",
+    "importButton": "Importar JSON o CSV",
+    "importing": "Importando..."
+  },
+  "onboarding": {
+    "welcome": "Bienvenido a ChronoFlow",
+    "welcomeDesc": "Ve a dónde va tu tiempo realmente — no a dónde planeas gastarlo.",
+    "dial": "El dial de 24 horas",
+    "dialDesc": "El círculo representa todo tu día. Cada bloque de color es algo que hiciste.",
+    "blocks": "Tus bloques",
+    "blocksDesc": "Los bloques son períodos de tiempo. Agrega para rastrear lo que haces durante el día.",
+    "review": "Revisión nocturna",
+    "reviewDesc": "Al final del día, márcalo como completo para construir tu racha.",
+    "tip1": "Haz clic en el dial para agregar un bloque",
+    "tip2": "Arrastra los bloques para moverlos",
+    "tip3": "Arrastra los bordes para redimensionar",
+    "tip4": "Desliza izquierda/derecha para navegar días",
+    "getStarted": "Empezar",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "skip": "Omitir",
+    "done": "Listo"
+  },
+  "toast": {
+    "blockAdded": "Bloque agregado",
+    "blockDeleted": "Bloque eliminado",
+    "blockArchived": "Bloque archivado",
+    "dayCompleted": "¡Día completado! Racha +1",
+    "settingsSaved": "Ajustes guardados",
+    "error": "Algo salió mal"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "retry": "Reintentar",
+    "error": "Error",
+    "offline": "Sin conexión",
+    "back": "←"
+  }
+}

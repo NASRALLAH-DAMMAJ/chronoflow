@@ -1,0 +1,116 @@
+{
+  "app": { "name": "ChronoFlow", "tagline": "Voyez où va votre temps vraiment" },
+  "nav": { "home": "Accueil", "analytics": "Analyses", "archive": "Archives", "rules": "Règles", "settings": "Paramètres", "signOut": "Déconnexion" },
+  "dial": {
+    "addBlock": "Ajouter un bloc",
+    "noBlocks": "Pas encore de blocs",
+    "tapToAdd": "Appuyez sur Ajouter ou cliquez sur le cadran pour planifier votre journée",
+    "currentTime": "Heure actuelle",
+    "blocksScheduled": "{{count}} bloc planifié",
+    "blocksScheduled_plural": "{{count}} blocs planifiés"
+  },
+  "block": {
+    "label": "Étiquette",
+    "category": "Catégorie",
+    "start": "Début",
+    "end": "Fin",
+    "duration": "Durée",
+    "locked": "Verrouillé",
+    "unlock": "Déverrouiller",
+    "delete": "Supprimer",
+    "archive": "Archiver",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirmDelete": "Supprimer ce bloc ?",
+    "confirmArchive": "Archiver ce bloc ?"
+  },
+  "categories": {
+    "work": "Travail",
+    "study": "Étude",
+    "exercise": "Exercice",
+    "creative": "Créatif",
+    "social": "Social",
+    "rest": "Repos",
+    "sleep": "Sommeil",
+    "other": "Autre"
+  },
+  "analytics": {
+    "title": "Analyses",
+    "totalHours": "Heures totales",
+    "avgHoursPerDay": "Moy. hrs/jour",
+    "topCategory": "Catégorie principale",
+    "daysTracked": "Jours avec blocs",
+    "categoryBreakdown": "Répartition par catégorie",
+    "dailyTotals": "Totaux journaliers",
+    "noData": "Aucune données pour la période sélectionnée"
+  },
+  "archive": {
+    "title": "Archives",
+    "empty": "Aucun bloc archivé",
+    "emptyDesc": "Les blocs que vous archivez apparaîtront ici.",
+    "restore": "Restaurer",
+    "filter": "Filtrer"
+  },
+  "rules": {
+    "title": "Règles récurrentes",
+    "addRule": "Ajouter une règle",
+    "empty": "Aucune règle récurrente",
+    "emptyDesc": "Créez une règle pour générer automatiquement des blocs certains jours.",
+    "delete": "Supprimer",
+    "edit": "Modifier"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "sleepSchedule": "Horaire de sommeil",
+    "bedtime": "Heure de coucher",
+    "wakeUp": "Heure de réveil",
+    "theme": "Thème",
+    "system": "Système",
+    "light": "Clair",
+    "dark": "Sombre",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "profile": "Profil",
+    "dataExport": "Exportation de données",
+    "exportJSON": "Exporter JSON (toutes les données)",
+    "exportCSV": "Exporter CSV (tous les blocs)",
+    "dataImport": "Importation de données",
+    "importButton": "Importer JSON ou CSV",
+    "importing": "Importation..."
+  },
+  "onboarding": {
+    "welcome": "Bienvenue sur ChronoFlow",
+    "welcomeDesc": "Voyez où va votre temps vraiment — pas là où vous prévoyez de le passer.",
+    "dial": "Le cadran de 24 heures",
+    "dialDesc": "Le cercle représente toute votre journée. Chaque bloc coloré est quelque chose que vous avez fait.",
+    "blocks": "Vos blocs",
+    "blocksDesc": "Les blocs sont des périodes de temps. Ajoutez-les pour suivre ce que vous faites pendant la journée.",
+    "review": "Revue nocturne",
+    "reviewDesc": "À la fin de la journée, marquez-la comme terminée pour construire votre série.",
+    "tip1": "Cliquez sur le cadran pour ajouter un bloc",
+    "tip2": "Glissez les blocs pour les déplacer",
+    "tip3": "Glissez les bords pour redimensionner",
+    "tip4": "Glissez gauche/droite pour naviguer entre les jours",
+    "getStarted": "Commencer",
+    "next": "Suivant",
+    "back": "Retour",
+    "skip": "Passer",
+    "done": "Terminé"
+  },
+  "toast": {
+    "blockAdded": "Bloc ajouté",
+    "blockDeleted": "Bloc supprimé",
+    "blockArchived": "Bloc archivé",
+    "dayCompleted": "Journée terminée ! Série +1",
+    "settingsSaved": "Paramètres enregistrés",
+    "error": "Une erreur s'est produite"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "retry": "Réessayer",
+    "error": "Erreur",
+    "offline": "Hors ligne",
+    "back": "←"
+  }
+}
