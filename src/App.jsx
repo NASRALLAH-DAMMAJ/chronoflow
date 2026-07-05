@@ -143,6 +143,17 @@ function AppContent() {
 
   const formOpen = showForm || editingBlock
 
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (formOpen) return
+      if (e.key === 'PageUp') { e.preventDefault(); goToDay(-1) }
+      if (e.key === 'PageDown') { e.preventDefault(); goToDay(1) }
+      if (e.key === 'Home') { e.preventDefault(); goToDate(new Date()) }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [formOpen, goToDate])
+
   return (
     <>
       {showOnboarding && <Onboarding onDismiss={dismissOnboarding} />}
