@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchSettings, upsertSettings } from '../lib/settings'
+import { exportToJSON, exportToCSV } from '../lib/export'
 import { Button, Card } from '../design-system/components'
 import { minutesToStr } from '../utils'
 import { ROUTES, DEFAULT_BEDTIME, DEFAULT_WAKE, SNAP_MINUTES } from '../store/constants'
@@ -201,6 +202,31 @@ export default function SettingsPage() {
           }}>
             Edit rules
           </Link>
+        </div>
+      </Card>
+
+      <Card padding="var(--sp-4)" style={{ marginTop: 16 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', margin: '0 0 12px' }}>
+          Data Export
+        </h2>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => exportToJSON(supabase, user.id).catch(e => alert('Export failed: ' + e.message))}
+          >
+            Export JSON (all data)
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => exportToCSV(supabase, user.id).catch(e => alert('Export failed: ' + e.message))}
+          >
+            Export CSV (all blocks)
+          </Button>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginTop: 8 }}>
+          Download your data as JSON (full backup) or CSV (blocks only).
         </div>
       </Card>
     </div>
