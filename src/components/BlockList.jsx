@@ -36,7 +36,9 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
       {sorted.map((block, index) => {
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
-        const isLocked = block.locked || block.category === SLEEP_CATEGORY
+        const isLocked = block.locked
+        const isSleepBlock = block.category === SLEEP_CATEGORY
+        const showLockIcon = isLocked || isSleepBlock
         return (
             <div
               key={block.id}
@@ -65,7 +67,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
                 {block.label}
-                <LockIcon locked={isLocked} />
+                {showLockIcon && <LockIcon locked={isLocked} />}
               </div>
               <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)' }}>
                 {minutesToStr(block.start)} – {minutesToStr(block.end)} · {formatDuration(block.end <= block.start ? block.end + MINUTES_IN_DAY - block.start : block.end - block.start)}

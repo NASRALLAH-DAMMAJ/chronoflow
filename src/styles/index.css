@@ -354,3 +354,67 @@ button, a, input, select, textarea {
     font-size: 16px !important;
   }
 }
+
+/* Safe area insets for notch phones */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  header {
+    padding-top: env(safe-area-inset-top) !important;
+  }
+
+  footer {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+}
+
+/* Prevent 300ms tap delay on touch */
+button, a, [role="button"], input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Momentum scrolling on iOS */
+.scrollable-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Long press visual feedback */
+.long-press-feedback {
+  transition: transform 0.15s ease;
+}
+.long-press-feedback:active {
+  transform: scale(0.97);
+}
+
+/* Bottom sheet on mobile */
+@media (max-width: 720px) {
+  .bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--clr-surface-elevated);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--sp-4);
+    padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    animation: bottomSheetIn 0.25s ease-out;
+    z-index: 100;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .bottom-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 99;
+    animation: fadeIn 0.15s ease-out;
+  }
+}
