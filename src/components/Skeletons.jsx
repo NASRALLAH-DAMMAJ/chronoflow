@@ -133,3 +133,20 @@ export function AnalyticsSkeleton() {
     </div>
   )
 }
+
+export function RulesSkeleton({ count = 3 }) {
+  return (
+    <div
+      role="status"
+      aria-label="Loading rules"
+      style={{ padding: 'var(--sp-6) var(--sp-4)', maxWidth: 600, margin: '0 auto' }}
+    >
+      <SkeletonLine width={200} height={24} style={{ marginBottom: 32 }} />
+      <SkeletonLine width={100} height={32} style={{ marginBottom: 16 }} />
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonBlock key={i} style={{ marginBottom: 8 }} />
+      ))}
+      <span className="sr-only">Loading rules...</span>
+    </div>
+  )
+}
