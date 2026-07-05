@@ -127,7 +127,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       let end = Math.min(MINUTES_IN_DAY, start + newRange)
       if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
       if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
-      setZoomRange({ start, end })
+      setZoomRange({ start: Math.round(start), end: Math.round(end) })
     } else {
       const { start, end } = zoomRange
       const range = end - start
@@ -140,7 +140,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       if (newStart < 0) { newStart = 0; newEnd = newRange }
       if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
       if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
-      else setZoomRange({ start: newStart, end: newEnd })
+      else setZoomRange({ start: Math.round(newStart), end: Math.round(newEnd) })
     }
   }, [zoomRange, placement])
 
@@ -196,7 +196,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         let end = Math.min(MINUTES_IN_DAY, start + newRange)
         if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
         if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
-        setZoomRange({ start, end })
+        setZoomRange({ start: Math.round(start), end: Math.round(end) })
       } else {
         const { start, end } = zoomRange
         const range = end - start
@@ -207,7 +207,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         if (newStart < 0) { newStart = 0; newEnd = newRange }
         if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
         if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
-        else setZoomRange({ start: newStart, end: newEnd })
+        else setZoomRange({ start: Math.round(newStart), end: Math.round(newEnd) })
       }
     }
   }, [zoomRange, placement])

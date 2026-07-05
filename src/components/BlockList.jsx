@@ -5,7 +5,7 @@ import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical } from 'lucide-reac
 import { minutesToStr, formatDuration } from '../utils'
 
 const iconBtnStyle = {
-  display: 'flex',
+  display: 'inline-flex',
   padding: 3,
   border: 'none',
   background: 'none',
@@ -13,6 +13,7 @@ const iconBtnStyle = {
   cursor: 'pointer',
   borderRadius: 4,
   flexShrink: 0,
+  lineHeight: 1,
 }
 
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
@@ -40,7 +41,6 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
       {sorted.map((block, index) => {
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
-        const isSleep = block.category === 'sleep'
         return (
           <div
             key={block.id}
@@ -53,7 +53,8 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}`}
             style={{
               animation: `fadeInUp 0.2s ease-out ${index * 0.03}s both`,
-              display: 'flex',
+              display: 'grid',
+              gridTemplateColumns: '3px 1fr auto',
               alignItems: 'center',
               gap: 8,
               padding: '6px 8px',
@@ -63,22 +64,21 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               cursor: 'pointer',
               userSelect: 'none',
               transition: 'all 0.15s ease',
-              flexWrap: 'nowrap',
             }}
           >
-            <div style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
-            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: color, alignSelf: 'stretch' }} />
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--clr-text)', marginRight: 6 }}>
                 {block.label}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--clr-text-tertiary)' }}>
-                {minutesToStr(block.start)} – {minutesToStr(block.end)} · {formatDuration(block.end <= block.start ? block.end + MINUTES_IN_DAY - block.start : block.end - block.start)}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-              <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', marginRight: 6 }}>
+                {minutesToStr(block.start)}–{minutesToStr(block.end)}
+              </span>
+              <span style={{ fontSize: 10, padding: '1px 4px', borderRadius: 3, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)' }}>
                 {block.category}
               </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
               {block.is_recurring && (
                 <div style={{ position: 'relative' }}>
                   <button
