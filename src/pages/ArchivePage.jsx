@@ -140,8 +140,15 @@ export default function ArchivePage() {
           Loading...
         </div>
       ) : blocks.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 32, color: 'var(--clr-text-tertiary)', fontSize: 14 }}>
-          No archived blocks.
+        <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--clr-text-tertiary)' }}>
+          <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.3 }}>📦</div>
+          <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 4, color: 'var(--clr-text-secondary)' }}>
+            No archived blocks
+          </p>
+          <p style={{ fontSize: 13, lineHeight: 1.5 }}>
+            Blocks you archive will appear here.<br />
+            Archive a block from the block list to keep your dial clean.
+          </p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

@@ -263,8 +263,15 @@ export default function RecurringRulesPage() {
       )}
 
       {rules.length === 0 && !editing && (
-        <div style={{ textAlign: 'center', padding: 32, color: 'var(--clr-text-tertiary)', fontSize: 14 }}>
-          No recurring rules set.
+        <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--clr-text-tertiary)' }}>
+          <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.3 }}>🔄</div>
+          <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 4, color: 'var(--clr-text-secondary)' }}>
+            No recurring rules yet
+          </p>
+          <p style={{ fontSize: 13, lineHeight: 1.5 }}>
+            Create a rule to automatically generate blocks<br />
+            on specific days of the week.
+          </p>
         </div>
       )}
 

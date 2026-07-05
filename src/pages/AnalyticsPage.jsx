@@ -9,8 +9,8 @@ import { pdf } from '@react-pdf/renderer'
 import ReportPDF from './ReportPDF'
 import VisualPDF from './VisualPDF'
 import {
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis,
-  Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 
 function formatDateStr(dateStr) {
@@ -145,6 +145,67 @@ export default function AnalyticsPage() {
       avgWakeDev: Math.round(wakeDevSum / sleepBlocks.length),
     }
   }, [blocks, settings])
+
+  const trendData = useMemo(() => {
+    if (dailyData.length < 2) return null
+    const n = dailyData.length
+    const totalPerDay = dailyData.map(d => {
+      let total = 0
+      for (const c of categories) total += (d[c] || 0)
+      return Math.round(total * 100) / 100
+    })
+    const xVals = totalPerDay.map((_, i) => i)
+    const sumX = xVals.reduce((a, b) => a + b, 0)
+    const sumY = totalPerDay.reduce((a, b) => a + b, 0)
+    const sumXY = xVals.reduce((s, x, i) => s + x * totalPerDay[i], 0)
+    const sumX2 = xVals.reduce((s, x) => s + x * x, 0)
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) || 0
+    const intercept = (sumY - slope * sumX) / n
+    return dailyData.map((d, i) => ({
+      date: d.date,
+      total: totalPerDay[i],
+      trend: Math.round((slope * i + intercept) * 100) / 100,
+    }))
+  }, [dailyData, categories])
+
+  const heatmapData = useMemo(() => {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const byDow = {}
+    for (const block of blocks) {
+      const dow = new Date(block.date + 'T00:00:00').getDay()
+      if (!byDow[dow]) byDow[dow] = 0
+      byDow[dow] += block.duration / 60
+    }
+    const daysWithBlocks = new Set(blocks.map(b => b.date)).size || 1
+    return dayNames.map((name, i) => ({
+      day: name,
+      hours: Math.round((byDow[i] || 0) / daysWithBlocks * 10) / 10,
+      dow: i,
+    }))
+  }, [blocks])
+
+  const cumulativeData = useMemo(() => {
+    let cumulative = 0
+    return dailyData.map(d => {
+      let total = 0
+      for (const c of categories) total += (d[c] || 0)
+      cumulative += total
+      return { date: d.date, cumulative: Math.round(cumulative * 10) / 10 }
+    })
+  }, [dailyData, categories])
+
+  const productivityScore = useMemo(() => {
+    if (blocks.length === 0) return null
+    const productiveCats = ['work', 'study', 'exercise', 'creative']
+    const totalHours = blocks.reduce((s, b) => s + b.duration / 60, 0)
+    const productiveHours = blocks
+      .filter(b => productiveCats.includes(b.category))
+      .reduce((s, b) => s + b.duration / 60, 0)
+    const score = totalHours > 0 ? Math.round((productiveHours / totalHours) * 100) : 0
+    const uniqueDates = new Set(blocks.map(b => b.date)).size || 1
+    const avgPerDay = Math.round(totalHours / uniqueDates * 10) / 10
+    return { score, productiveHours: Math.round(productiveHours * 10) / 10, totalHours: Math.round(totalHours * 10) / 10, avgPerDay }
+  }, [blocks])
 
   const summary = useMemo(() => {
     const totalHours = blocks.reduce((s, b) => s + b.duration / 60, 0)
@@ -406,6 +467,80 @@ export default function AnalyticsPage() {
           </div>
           <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginTop: 8 }}>
             Based on {sleepData.count} sleep block{sleepData.count !== 1 ? 's' : ''}
+          </div>
+        </Card>
+      )}
+
+      {trendData && (
+        <Card padding="var(--sp-4)" style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', margin: '0 0 16px' }}>
+            Daily Hours Trend
+          </h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={trendData}>
+              <XAxis dataKey="date" tick={tickStyle} />
+              <YAxis tick={tickStyle} />
+              <Tooltip contentStyle={tooltipContentStyle} />
+              <Line type="monotone" dataKey="total" stroke={BRAND_COLOR} strokeWidth={2} dot={false} name="Daily hours" />
+              <Line type="monotone" dataKey="trend" stroke="#94a3b8" strokeWidth={1} strokeDasharray="5 5" dot={false} name="Trend" />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      <Card padding="var(--sp-4)" style={{ marginBottom: 16 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', margin: '0 0 16px' }}>
+          Day of Week Average
+        </h2>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={heatmapData}>
+            <XAxis dataKey="day" tick={tickStyle} />
+            <YAxis tick={tickStyle} />
+            <Tooltip contentStyle={tooltipContentStyle} formatter={v => [`${v}h`, 'Avg hours']} />
+            <Bar dataKey="hours" fill={BRAND_COLOR} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {cumulativeData.length > 0 && (
+        <Card padding="var(--sp-4)" style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', margin: '0 0 16px' }}>
+            Cumulative Hours Tracked
+          </h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={cumulativeData}>
+              <XAxis dataKey="date" tick={tickStyle} />
+              <YAxis tick={tickStyle} />
+              <Tooltip contentStyle={tooltipContentStyle} formatter={v => [`${v}h`, 'Total']} />
+              <Line type="monotone" dataKey="cumulative" stroke={BRAND_COLOR} strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      {productivityScore && (
+        <Card padding="var(--sp-4)" style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', margin: '0 0 16px' }}>
+            Productivity Score
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+            <div style={{ padding: 16, backgroundColor: 'var(--clr-bg-secondary)', borderRadius: 8, textAlign: 'center' }}>
+              <div style={{ fontSize: 32, fontWeight: 700, color: productivityScore.score >= 50 ? '#059669' : '#dc2626' }}>
+                {productivityScore.score}%
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--clr-text-tertiary)' }}>Productive ratio</div>
+            </div>
+            <div style={{ padding: 12, backgroundColor: 'var(--clr-bg-secondary)', borderRadius: 8, textAlign: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--clr-text)' }}>{productivityScore.productiveHours}h</div>
+              <div style={{ fontSize: 11, color: 'var(--clr-text-tertiary)' }}>Productive hours</div>
+            </div>
+            <div style={{ padding: 12, backgroundColor: 'var(--clr-bg-secondary)', borderRadius: 8, textAlign: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--clr-text)' }}>{productivityScore.avgPerDay}h</div>
+              <div style={{ fontSize: 11, color: 'var(--clr-text-tertiary)' }}>Avg per day</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginTop: 8 }}>
+            Based on work, study, exercise, and creative categories
           </div>
         </Card>
       )}

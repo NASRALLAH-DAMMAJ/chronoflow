@@ -15,15 +15,16 @@ function LockIcon({ locked }) {
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   if (blocks.length === 0) {
     return (
-      <div className="animate-fade-in" style={{ textAlign: 'center', padding: '32px 24px', color: 'var(--clr-text-tertiary)' }}>
-        <div style={{ marginBottom: 12, opacity: 0.4 }}>
+      <div className="animate-fade-in" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--clr-text-tertiary)' }}>
+        <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.3 }}>
           <IconClock />
         </div>
-        <p style={{ fontSize: 14, marginBottom: 4 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 4, color: 'var(--clr-text-secondary)' }}>
           No blocks yet
         </p>
-        <p style={{ fontSize: 13 }}>
-          Tap <strong>Add</strong> to plan your day
+        <p style={{ fontSize: 13, lineHeight: 1.5 }}>
+          Tap <strong>Add</strong> or click the dial<br />
+          to plan your day
         </p>
       </div>
     )
