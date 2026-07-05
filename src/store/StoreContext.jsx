@@ -3,7 +3,6 @@ import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, compu
 import { getTodayStr } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock } from '../lib/blocks'
-import { fetchSchedule } from '../lib/schedule'
 import { migrateLocalStorage } from '../lib/migrate'
 
 const StoreContext = createContext(null)
@@ -40,22 +39,14 @@ export function StoreProvider({ children }) {
         })
         if (userIdRef.current !== currentUser) return
         try {
-          const blocks = await fetchSchedule(supabase, today)
+          const blocks = await fetchBlocks(supabase, today)
           if (userIdRef.current !== currentUser) return
-          console.log('[Store] Loaded blocks from schedule:', blocks.length)
+          console.log('[Store] Loaded blocks from DB:', blocks.length)
           dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-        } catch (scheduleErr) {
-          console.warn('[Store] fetchSchedule failed, falling back to fetchBlocks:', scheduleErr)
-          try {
-            const blocks = await fetchBlocks(supabase, today)
-            if (userIdRef.current !== currentUser) return
-            console.log('[Store] Loaded blocks from DB:', blocks.length)
-            dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-          } catch (blocksErr) {
-            console.error('[Store] fetchBlocks also failed:', blocksErr)
-            setDbError('Cannot load blocks: ' + (blocksErr.message || 'check DB tables'))
-            dispatch({ type: 'LOAD_BLOCKS', payload: [] })
-          }
+        } catch (blocksErr) {
+          console.error('[Store] fetchBlocks failed:', blocksErr)
+          setDbError('Cannot load blocks: ' + (blocksErr.message || 'check DB tables'))
+          dispatch({ type: 'LOAD_BLOCKS', payload: [] })
         }
       } catch (err) {
         console.error('[Store] Init failed:', err)
@@ -110,7 +101,7 @@ export function StoreProvider({ children }) {
     saveTimerRef.current = setTimeout(() => {
       saveToDb(state.dateStr, state.blocks)
       saveTimerRef.current = null
-    }, 300)
+    }, 0)
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current)
@@ -125,19 +116,12 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
     try {
-      const blocks = await fetchSchedule(supabase, ds)
+      const blocks = await fetchBlocks(supabase, ds)
       if (gen !== genRef.current) return
       dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-    } catch (scheduleErr) {
-      console.warn('[Store] goToDate fetchSchedule failed:', scheduleErr)
-      try {
-        const blocks = await fetchBlocks(supabase, ds)
-        if (gen !== genRef.current) return
-        dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-      } catch (blocksErr) {
-        console.error('[Store] goToDate fetchBlocks also failed:', blocksErr)
-        dispatch({ type: 'LOAD_BLOCKS', payload: [] })
-      }
+    } catch (blocksErr) {
+      console.error('[Store] goToDate fetchBlocks failed:', blocksErr)
+      dispatch({ type: 'LOAD_BLOCKS', payload: [] })
     }
   }, [supabase, flushSave])
 
