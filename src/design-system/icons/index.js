@@ -1,1 +1,19 @@
-export { IconPlus, IconX, IconCheck, IconChevronLeft, IconChevronRight, IconChevronDown, IconSearch, IconClock, IconCalendar, IconEdit, IconTrash, IconSun, IconMoon, IconSettings, IconMenu, IconArrowRight, IconArchive } from './Icon'
+export {
+  Plus as IconPlus,
+  X as IconX,
+  Check as IconCheck,
+  ChevronLeft as IconChevronLeft,
+  ChevronRight as IconChevronRight,
+  ChevronDown as IconChevronDown,
+  Search as IconSearch,
+  Clock as IconClock,
+  Calendar as IconCalendar,
+  Pencil as IconEdit,
+  Trash2 as IconTrash,
+  Sun as IconSun,
+  Moon as IconMoon,
+  Settings as IconSettings,
+  Menu as IconMenu,
+  ArrowRight as IconArrowRight,
+  Archive as IconArchive,
+} from 'lucide-react'

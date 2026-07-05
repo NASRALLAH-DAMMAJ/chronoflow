@@ -92,10 +92,7 @@ export async function upsertBlocks(supabase, dateStr, blocks, userId) {
     const dbBlocks = validBlocks.map(b => blockToDb(b, dateStr, userId))
     const { error } = await supabase
       .from(TABLES.BLOCKS)
-      .upsert(dbBlocks, {
-        onConflict: 'user_id,date,start_min',
-        ignoreDuplicates: false,
-      })
+      .insert(dbBlocks)
 
     if (error) throw error
   })

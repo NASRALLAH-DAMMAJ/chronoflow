@@ -1,16 +1,8 @@
 import React from 'react'
-import { CATEGORY_COLORS, SLEEP_CATEGORY, MINUTES_IN_DAY } from '../store/constants'
+import { CATEGORY_COLORS, MINUTES_IN_DAY } from '../store/constants'
 import { Badge } from '../design-system/components'
 import { IconClock, IconEdit, IconArchive, IconTrash } from '../design-system/icons'
 import { minutesToStr, formatDuration } from '../utils'
-
-function LockIcon({ locked }) {
-  return (
-    <span style={{ fontSize: 14, lineHeight: 1, opacity: locked ? 1 : 0.4 }}>
-      {locked ? '🔒' : '🔓'}
-    </span>
-  )
-}
 
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   if (blocks.length === 0) {
@@ -37,9 +29,6 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
       {sorted.map((block, index) => {
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
-        const isLocked = block.locked
-        const isSleepBlock = block.category === SLEEP_CATEGORY
-        const showLockIcon = isLocked || isSleepBlock
         return (
             <div
               key={block.id}
@@ -49,7 +38,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               tabIndex={0}
               role="button"
               aria-pressed={isSelected}
-              aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}${isLocked ? ', locked' : ''}`}
+              aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}`}
               style={{
               animation: `fadeInUp 0.2s ease-out ${index * 0.03}s both`,
               display: 'flex',
@@ -59,7 +48,6 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               borderRadius: 6,
               backgroundColor: isSelected ? 'var(--clr-bg-secondary)' : 'transparent',
               border: `2px solid ${isSelected ? color : 'transparent'}`,
-              opacity: isLocked ? 0.85 : 1,
               cursor: 'pointer',
               userSelect: 'none',
               transition: 'all 0.15s ease',
@@ -67,9 +55,8 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
           >
             <div style={{ width: 4, height: 32, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {block.label}
-                {showLockIcon && <LockIcon locked={isLocked} />}
               </div>
               <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)' }}>
                 {minutesToStr(block.start)} – {minutesToStr(block.end)} · {formatDuration(block.end <= block.start ? block.end + MINUTES_IN_DAY - block.start : block.end - block.start)}
@@ -122,22 +109,6 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
                 )}
               </div>
             )}
-            <button
-              onClick={e => { e.stopPropagation(); onToggleLock && onToggleLock(block.id) }}
-              aria-label={isLocked ? `Unlock ${block.label}` : `Lock ${block.label}`}
-              title={isLocked ? 'Unlock block' : 'Lock block'}
-              style={{
-                display: 'flex',
-                padding: 4,
-                border: 'none',
-                background: 'none',
-                color: 'var(--clr-text-tertiary)',
-                cursor: 'pointer',
-                borderRadius: 4,
-              }}
-            >
-              <LockIcon locked={isLocked} />
-            </button>
             <button
               onClick={e => { e.stopPropagation(); onEditBlock(block) }}
               aria-label={`Edit ${block.label}`}
