@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchSettings, upsertSettings } from '../lib/settings'
-import { exportToJSON, exportToCSV } from '../lib/export'
+import { exportToJSON, exportToCSV, importFromJSON, importFromCSV } from '../lib/export'
 import { Button, Card } from '../design-system/components'
 import { minutesToStr } from '../utils'
 import { ROUTES, DEFAULT_BEDTIME, DEFAULT_WAKE, SNAP_MINUTES } from '../store/constants'
@@ -22,6 +22,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
 
   useEffect(() => {
     if (!user) return
@@ -54,6 +56,24 @@ export default function SettingsPage() {
     }
     setSaving(false)
   }, [supabase, user, sleepStart, sleepEnd, theme])
+
+  const handleImport = useCallback(async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    setImporting(true)
+    setImportResult(null)
+    try {
+      const isJSON = file.name.endsWith('.json')
+      const result = isJSON
+        ? await importFromJSON(supabase, user.id, file)
+        : await importFromCSV(supabase, user.id, file)
+      setImportResult(result)
+    } catch (err) {
+      setImportResult({ errors: [err.message], blocks: 0, rules: 0 })
+    }
+    setImporting(false)
+    e.target.value = ''
+  }, [supabase, user])
 
   if (loading) {
     return (
@@ -227,6 +247,53 @@ export default function SettingsPage() {
         </div>
         <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginTop: 8 }}>
           Download your data as JSON (full backup) or CSV (blocks only).
+        </div>
+      </Card>
+
+      <Card padding="var(--sp-4)" style={{ marginTop: 16 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', margin: '0 0 12px' }}>
+          Data Import
+        </h2>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <label style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', fontSize: 13, fontWeight: 500,
+            border: '2px solid var(--clr-border)', borderRadius: 6,
+            cursor: importing ? 'wait' : 'pointer',
+            color: 'var(--clr-text-secondary)',
+            backgroundColor: 'var(--clr-surface)',
+            opacity: importing ? 0.6 : 1,
+          }}>
+            {importing ? 'Importing...' : 'Import JSON or CSV'}
+            <input
+              type="file"
+              accept=".json,.csv"
+              onChange={handleImport}
+              disabled={importing}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+        {importResult && (
+          <div style={{
+            marginTop: 12, padding: '10px 14px', borderRadius: 8, fontSize: 13,
+            backgroundColor: importResult.errors.length > 0 ? '#fef3c7' : '#d1fae5',
+            color: importResult.errors.length > 0 ? '#92400e' : '#065f46',
+            border: `1px solid ${importResult.errors.length > 0 ? '#fcd34d' : '#6ee7b7'}`,
+          }}>
+            {importResult.blocks > 0 && <div>Imported {importResult.blocks} block{importResult.blocks !== 1 ? 's' : ''}</div>}
+            {importResult.rules > 0 && <div>Imported {importResult.rules} rule{importResult.rules !== 1 ? 's' : ''}</div>}
+            {importResult.settings && <div>Imported settings</div>}
+            {importResult.errors.length > 0 && (
+              <div style={{ marginTop: 4 }}>
+                {importResult.errors.slice(0, 5).map((err, i) => <div key={i}>- {err}</div>)}
+                {importResult.errors.length > 5 && <div>- ...and {importResult.errors.length - 5} more errors</div>}
+              </div>
+            )}
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: 'var(--clr-text-tertiary)', marginTop: 8 }}>
+          Import from a ChronoFlow JSON backup or a CSV file with columns: Date, Label, Category, Start, Duration (min).
         </div>
       </Card>
     </div>
