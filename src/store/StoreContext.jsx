@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, computeStreak } from './reducer'
 import { getTodayStr } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
@@ -24,9 +24,9 @@ export function StoreProvider({ children }) {
   const userIdRef = useRef(null)
   const hasLoadedOnce = useRef(false)
   const saveTimerRef = useRef(null)
-  const loadedFromServerRef = useRef(false)
   const stateRef = useRef(state)
   stateRef.current = state
+  const [dbError, setDbError] = useState(null)
 
   useEffect(() => {
     if (!user || initFetched.current) return
@@ -40,7 +40,6 @@ export function StoreProvider({ children }) {
         })
         if (userIdRef.current !== currentUser) return
         try {
-          loadedFromServerRef.current = true
           const blocks = await fetchSchedule(supabase, today)
           if (userIdRef.current !== currentUser) return
           console.log('[Store] Loaded blocks from schedule:', blocks.length)
@@ -48,18 +47,19 @@ export function StoreProvider({ children }) {
         } catch (scheduleErr) {
           console.warn('[Store] fetchSchedule failed, falling back to fetchBlocks:', scheduleErr)
           try {
-            loadedFromServerRef.current = true
             const blocks = await fetchBlocks(supabase, today)
             if (userIdRef.current !== currentUser) return
             console.log('[Store] Loaded blocks from DB:', blocks.length)
             dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
           } catch (blocksErr) {
             console.error('[Store] fetchBlocks also failed:', blocksErr)
+            setDbError('Cannot load blocks: ' + (blocksErr.message || 'check DB tables'))
             dispatch({ type: 'LOAD_BLOCKS', payload: [] })
           }
         }
       } catch (err) {
         console.error('[Store] Init failed:', err)
+        setDbError('Init failed: ' + err.message)
         dispatch({ type: 'LOAD_BLOCKS', payload: [] })
       } finally {
         if (userIdRef.current === currentUser) {
@@ -72,8 +72,11 @@ export function StoreProvider({ children }) {
 
   const saveToDb = useCallback((dateStr, blocks) => {
     if (!user || !supabase || !dateStr) return Promise.resolve()
-    return upsertBlocks(supabase, dateStr, blocks, user.id).catch(err => {
+    return upsertBlocks(supabase, dateStr, blocks, user.id).then(() => {
+      setDbError(null)
+    }).catch(err => {
       console.error('[Store] Failed to save blocks:', err)
+      setDbError('Save failed: ' + (err.message || 'unknown error'))
     })
   }, [user, supabase])
 
@@ -105,11 +108,6 @@ export function StoreProvider({ children }) {
     if (!hasLoadedOnce.current || !user || !state.loaded) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
-      if (loadedFromServerRef.current) {
-        loadedFromServerRef.current = false
-        saveTimerRef.current = null
-        return
-      }
       saveToDb(state.dateStr, state.blocks)
       saveTimerRef.current = null
     }, 300)
@@ -127,14 +125,12 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
     try {
-      loadedFromServerRef.current = true
       const blocks = await fetchSchedule(supabase, ds)
       if (gen !== genRef.current) return
       dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
     } catch (scheduleErr) {
       console.warn('[Store] goToDate fetchSchedule failed:', scheduleErr)
       try {
-        loadedFromServerRef.current = true
         const blocks = await fetchBlocks(supabase, ds)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
@@ -201,6 +197,7 @@ export function StoreProvider({ children }) {
     selectedId: state.selectedId,
     completedDays: state.completedDays,
     streak,
+    dbError,
     goToDate,
     addBlock,
     updateBlock,
@@ -211,7 +208,7 @@ export function StoreProvider({ children }) {
     resizeBlockStart,
     selectBlock,
     completeDay,
-  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, completeDay])
+  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, completeDay])
 
   return (
     <StoreContext.Provider value={value}>

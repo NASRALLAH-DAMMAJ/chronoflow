@@ -26,7 +26,7 @@ function AppContent() {
   const navigate = useNavigate()
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
-  const { blocks, dateStr, selectedId, completedDays, loading, streak, addBlock, updateBlock, deleteBlock, archiveBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, goToDate, completeDay } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
   const [placement, setPlacement] = useState(null)
@@ -216,6 +216,23 @@ function AppContent() {
           </Button>
         </div>
       </header>
+
+      {dbError && (
+        <div style={{
+          backgroundColor: '#fee2e2',
+          border: '1px solid #fca5a5',
+          color: '#991b1b',
+          padding: '10px 16px',
+          borderRadius: 8,
+          marginBottom: 16,
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <strong>DB Error:</strong> {dbError}
+        </div>
+      )}
 
       <div className="app-grid animate-fade-in-up" style={{
         display: 'grid',
