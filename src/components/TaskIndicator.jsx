@@ -5,7 +5,7 @@ import ProgressBar from './ProgressBar'
 const styles = {
   container: {
     position: 'fixed',
-    bottom: 16,
+    bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
     right: 16,
     zIndex: 9999,
     fontFamily: 'var(--ff-body, Inter, sans-serif)',
@@ -41,6 +41,7 @@ const styles = {
     padding: 12,
     maxHeight: 300,
     overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
   },
   taskItem: {
     padding: '8px 0',

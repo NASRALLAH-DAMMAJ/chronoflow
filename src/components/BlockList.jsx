@@ -32,7 +32,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
   const sorted = [...blocks].sort((a, b) => a.start - b.start)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 400, overflowY: 'auto', paddingRight: 4 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 400, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingRight: 4 }}>
       {sorted.map((block, index) => {
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
@@ -60,6 +60,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               border: `2px solid ${isSelected ? color : 'transparent'}`,
               opacity: isLocked ? 0.85 : 1,
               cursor: 'pointer',
+              userSelect: 'none',
               transition: 'all 0.15s ease',
             }}
           >

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button, Card } from '../design-system/components'
 
 const STEPS = [
@@ -40,6 +40,11 @@ export function Onboarding({ onDismiss }) {
   const [step, setStep] = useState(0)
   const current = STEPS[step]
   const isLast = step === STEPS.length - 1
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
 
   return (
     <div style={{

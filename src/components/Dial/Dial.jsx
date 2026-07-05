@@ -316,6 +316,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
           borderRadius: '50%',
           cursor: getCursorStyle(),
           touchAction: 'none',
+          userSelect: 'none',
         }}
         onWheel={placement ? undefined : handleWheel}
         onTouchStart={placement ? undefined : handleTouchStart}

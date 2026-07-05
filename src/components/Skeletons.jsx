@@ -46,7 +46,7 @@ export function PageSkeleton({ lines = 6, blocks = 3 }) {
         }
       `}</style>
       <SkeletonLine width={200} height={24} style={{ marginBottom: 24 }} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 340px)', gap: 24 }}>
         <div>
           <SkeletonBlock style={{ width: '100%', height: 300, borderRadius: '50%' }} />
         </div>

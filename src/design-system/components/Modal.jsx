@@ -9,11 +9,15 @@ export function Modal({ isOpen, onClose, title, children, width = '480px' }) {
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement
+      document.body.style.overflow = 'hidden'
       const timer = setTimeout(() => {
         const firstFocusable = contentRef.current?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
         if (firstFocusable) firstFocusable.focus()
       }, 50)
-      return () => clearTimeout(timer)
+      return () => {
+        clearTimeout(timer)
+        document.body.style.overflow = ''
+      }
     } else if (previousFocusRef.current) {
       previousFocusRef.current.focus()
     }
@@ -69,6 +73,7 @@ export function Modal({ isOpen, onClose, title, children, width = '480px' }) {
         maxWidth: 'calc(100vw - var(--sp-8))',
         maxHeight: 'calc(100vh - var(--sp-8))',
         overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         backgroundColor: 'var(--clr-surface-elevated)',
         borderRadius: 'var(--radius-xl)',
         boxShadow: 'var(--shadow-overlay)',

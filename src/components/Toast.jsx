@@ -70,7 +70,7 @@ function ToastContainer({ toasts, onRemove }) {
       aria-label="Notifications"
       style={{
         position: 'fixed',
-        bottom: 16,
+        bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 10000,
