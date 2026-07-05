@@ -8,8 +8,8 @@ const iconBtn = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: 24,
-  height: 24,
+  width: 22,
+  height: 22,
   padding: 0,
   border: 'none',
   background: 'none',
@@ -40,10 +40,13 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
   const sorted = [...blocks].sort((a, b) => a.start - b.start)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 400, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 440, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
       {sorted.map((block, index) => {
         const isSelected = block.id === selectedId
         const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
+        const dur = block.end <= block.start
+          ? block.end + MINUTES_IN_DAY - block.start
+          : block.end - block.start
         return (
           <div
             key={block.id}
@@ -57,10 +60,10 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             style={{
               animation: `fadeInUp 0.2s ease-out ${index * 0.03}s both`,
               display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '5px 6px',
-              borderRadius: 6,
+              alignItems: 'stretch',
+              gap: 0,
+              padding: '10px 10px',
+              borderRadius: 8,
               backgroundColor: isSelected ? 'var(--clr-bg-secondary)' : 'transparent',
               border: `2px solid ${isSelected ? color : 'transparent'}`,
               cursor: 'pointer',
@@ -68,19 +71,27 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               transition: 'all 0.15s ease',
             }}
           >
-            <div style={{ width: 3, height: 24, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
-            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '1 1 0', minWidth: 0 }}>
+            <div style={{ width: 4, borderRadius: 2, backgroundColor: color, flexShrink: 0, marginRight: 10 }} />
+            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {block.label}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {minutesToStr(block.start)}–{minutesToStr(block.end)}
-              </span>
-              <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {block.category}
-              </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+                <span style={{ fontSize: 12, color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
+                  {minutesToStr(block.start)} – {minutesToStr(block.end)}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)' }}>
+                  {formatDuration(dur)}
+                </span>
+                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
+                  {block.category}
+                </span>
+                {block.is_recurring && (
+                  <span style={{ fontSize: 10, color: 'var(--clr-text-tertiary)' }}>↻</span>
+                )}
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, marginLeft: 4 }}>
               {block.is_recurring && (
                 <div style={{ position: 'relative' }}>
                   <button
@@ -88,7 +99,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
                     aria-label="More options"
                     style={iconBtn}
                   >
-                    <MoreVertical size={14} />
+                    <MoreVertical size={13} />
                   </button>
                   {contextBlockId === block.id && (
                     <div ref={contextRef} style={{
@@ -124,20 +135,20 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
                 </div>
               )}
               <button onClick={e => { e.stopPropagation(); onEditBlock(block) }} aria-label={`Edit ${block.label}`} style={iconBtn}>
-                <Pencil size={14} />
+                <Pencil size={13} />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); onToggleLock && onToggleLock(block.id) }}
                 aria-label={block.locked ? `Unlock ${block.label}` : `Lock ${block.label}`}
                 style={{ ...iconBtn, color: block.locked ? '#D97706' : undefined }}
               >
-                {block.locked ? <Unlock size={14} /> : <Lock size={14} />}
+                {block.locked ? <Unlock size={13} /> : <Lock size={13} />}
               </button>
               <button onClick={e => { e.stopPropagation(); onArchiveBlock(block.id) }} aria-label={`Archive ${block.label}`} style={iconBtn}>
-                <Archive size={14} />
+                <Archive size={13} />
               </button>
               <button onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }} aria-label={`Delete ${block.label}`} style={iconBtn}>
-                <Trash2 size={14} />
+                <Trash2 size={13} />
               </button>
             </div>
           </div>

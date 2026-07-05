@@ -100,8 +100,8 @@ describe('blockReducer', () => {
     it('moves block to snapped position preserving duration', () => {
       const state = { ...initialState, blocks: [{ id: 'b1', start: 30, end: 90, label: 'A', category: 'other', tags: [] }] }
       const result = blockReducer(state, { type: 'MOVE_BLOCK', payload: { id: 'b1', newStart: 100 } })
-      expect(result.blocks[0].start).toBe(100)
-      expect(result.blocks[0].end).toBe(160)
+      expect(result.blocks[0].start).toBe(105)
+      expect(result.blocks[0].end).toBe(165)
     })
 
     it('handles block not found', () => {
@@ -114,8 +114,8 @@ describe('blockReducer', () => {
       const state = { ...initialState, blocks: [{ id: 'b1', start: 1400, end: 30, label: 'Wrap', category: 'other', tags: [] }] }
       const result = blockReducer(state, { type: 'MOVE_BLOCK', payload: { id: 'b1', newStart: 100 } })
       const duration = 30 + 1440 - 1400
-      const snappedStart = Math.round(100 / 5) * 5
-      const snappedEnd = Math.round((snappedStart + duration) / 5) * 5
+      const snappedStart = Math.round(100 / 15) * 15
+      const snappedEnd = Math.round((snappedStart + duration) / 15) * 15
       expect(result.blocks[0].start).toBe(snappedStart % 1440)
       expect(result.blocks[0].end).toBe(snappedEnd % 1440 || 1440)
     })

@@ -148,7 +148,7 @@ export async function restoreBlock(supabase, id) {
   })
 }
 
-const ARCHIVED_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,archived,locked'
+const ARCHIVED_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,archived'
 
 export function archivedBlockFromDb(row) {
   const end = row.start_min + row.duration
@@ -161,7 +161,6 @@ export function archivedBlockFromDb(row) {
     category: row.category,
     is_recurring: row.is_recurring || false,
     parent_rule_id: row.parent_rule_id || null,
-    locked: row.locked || false,
   }
 }
 

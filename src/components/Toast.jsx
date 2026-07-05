@@ -24,7 +24,11 @@ export function ToastProvider({ children }) {
       variant: options.variant || 'info',
       duration: options.duration || (options.variant === 'error' ? 6000 : 3000),
     }
-    setToasts(prev => [...prev, toast])
+    setToasts(prev => {
+      const deduped = prev.filter(t => t.message !== message)
+      const limited = deduped.length >= 3 ? deduped.slice(-2) : deduped
+      return [...limited, toast]
+    })
     timersRef.current[id] = setTimeout(() => removeToast(id), toast.duration)
     return id
   }, [removeToast])
