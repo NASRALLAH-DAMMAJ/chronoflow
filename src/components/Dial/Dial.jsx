@@ -119,15 +119,16 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
 
     const zoomFactor = e.deltaY > 0 ? 1.2 : 1 / 1.2
+    const snap = (m) => Math.round(m / 15) * 15
 
     if (!zoomRange) {
       const newRange = Math.max(60, MINUTES_IN_DAY / zoomFactor)
-      const center = pointerRenderMinute
+      const center = snap(pointerRenderMinute)
       let start = Math.max(0, center - newRange / 2)
       let end = Math.min(MINUTES_IN_DAY, start + newRange)
       if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
       if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
-      setZoomRange({ start: Math.round(start), end: Math.round(end) })
+      setZoomRange({ start: snap(start), end: snap(end) })
     } else {
       const { start, end } = zoomRange
       const range = end - start
@@ -140,7 +141,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       if (newStart < 0) { newStart = 0; newEnd = newRange }
       if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
       if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
-      else setZoomRange({ start: Math.round(newStart), end: Math.round(newEnd) })
+      else setZoomRange({ start: snap(newStart), end: snap(newEnd) })
     }
   }, [zoomRange, placement])
 
@@ -189,14 +190,16 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       const pointerAngle = Math.atan2(my - cy, mx - cx)
     const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
 
+      const snap = (m) => Math.round(m / 15) * 15
+
       if (!zoomRange) {
         const newRange = Math.max(60, MINUTES_IN_DAY / scale)
-        const center = pointerRenderMinute
+        const center = snap(pointerRenderMinute)
         let start = Math.max(0, center - newRange / 2)
         let end = Math.min(MINUTES_IN_DAY, start + newRange)
         if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
         if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
-        setZoomRange({ start: Math.round(start), end: Math.round(end) })
+        setZoomRange({ start: snap(start), end: snap(end) })
       } else {
         const { start, end } = zoomRange
         const range = end - start
@@ -207,7 +210,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         if (newStart < 0) { newStart = 0; newEnd = newRange }
         if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
         if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
-        else setZoomRange({ start: Math.round(newStart), end: Math.round(newEnd) })
+        else setZoomRange({ start: snap(newStart), end: snap(newEnd) })
       }
     }
   }, [zoomRange, placement])

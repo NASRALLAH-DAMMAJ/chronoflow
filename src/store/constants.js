@@ -11,7 +11,7 @@ export const MINUTES_IN_DAY = 1440
 export const HALF_DAY = MINUTES_IN_DAY / 2
 export const DEG_PER_MINUTE = 360 / MINUTES_IN_DAY
 export const RAD_PER_MINUTE = (2 * Math.PI) / MINUTES_IN_DAY
-export const SNAP_MINUTES = 5
+export const SNAP_MINUTES = 15
 export const MS_PER_DAY = 86400000
 export const LOCALE = 'en-US'
 

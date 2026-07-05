@@ -4,16 +4,19 @@ import { IconClock } from '../design-system/icons'
 import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical } from 'lucide-react'
 import { minutesToStr, formatDuration } from '../utils'
 
-const iconBtnStyle = {
+const iconBtn = {
   display: 'inline-flex',
-  padding: 3,
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 24,
+  height: 24,
+  padding: 0,
   border: 'none',
   background: 'none',
   color: 'var(--clr-text-tertiary)',
   cursor: 'pointer',
   borderRadius: 4,
   flexShrink: 0,
-  lineHeight: 1,
 }
 
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
@@ -53,11 +56,10 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}`}
             style={{
               animation: `fadeInUp 0.2s ease-out ${index * 0.03}s both`,
-              display: 'grid',
-              gridTemplateColumns: '3px 1fr auto',
+              display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              padding: '6px 8px',
+              gap: 6,
+              padding: '5px 6px',
               borderRadius: 6,
               backgroundColor: isSelected ? 'var(--clr-bg-secondary)' : 'transparent',
               border: `2px solid ${isSelected ? color : 'transparent'}`,
@@ -66,25 +68,25 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               transition: 'all 0.15s ease',
             }}
           >
-            <div style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: color, alignSelf: 'stretch' }} />
-            <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--clr-text)', marginRight: 6 }}>
+            <div style={{ width: 3, height: 24, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
+            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 100 }}>
                 {block.label}
               </span>
-              <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', marginRight: 6 }}>
+              <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {minutesToStr(block.start)}–{minutesToStr(block.end)}
               </span>
-              <span style={{ fontSize: 10, padding: '1px 4px', borderRadius: 3, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)' }}>
+              <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {block.category}
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
               {block.is_recurring && (
                 <div style={{ position: 'relative' }}>
                   <button
                     onClick={e => { e.stopPropagation(); onContextMenu(block.id) }}
                     aria-label="More options"
-                    style={iconBtnStyle}
+                    style={iconBtn}
                   >
                     <MoreVertical size={14} />
                   </button>
@@ -121,32 +123,20 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
                   )}
                 </div>
               )}
-              <button
-                onClick={e => { e.stopPropagation(); onEditBlock(block) }}
-                aria-label={`Edit ${block.label}`}
-                style={iconBtnStyle}
-              >
+              <button onClick={e => { e.stopPropagation(); onEditBlock(block) }} aria-label={`Edit ${block.label}`} style={iconBtn}>
                 <Pencil size={14} />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); onToggleLock && onToggleLock(block.id) }}
                 aria-label={block.locked ? `Unlock ${block.label}` : `Lock ${block.label}`}
-                style={{ ...iconBtnStyle, color: block.locked ? '#D97706' : 'var(--clr-text-tertiary)' }}
+                style={{ ...iconBtn, color: block.locked ? '#D97706' : undefined }}
               >
                 {block.locked ? <Unlock size={14} /> : <Lock size={14} />}
               </button>
-              <button
-                onClick={e => { e.stopPropagation(); onArchiveBlock(block.id) }}
-                aria-label={`Archive ${block.label}`}
-                style={iconBtnStyle}
-              >
+              <button onClick={e => { e.stopPropagation(); onArchiveBlock(block.id) }} aria-label={`Archive ${block.label}`} style={iconBtn}>
                 <Archive size={14} />
               </button>
-              <button
-                onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
-                aria-label={`Delete ${block.label}`}
-                style={iconBtnStyle}
-              >
+              <button onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }} aria-label={`Delete ${block.label}`} style={iconBtn}>
                 <Trash2 size={14} />
               </button>
             </div>
