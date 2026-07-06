@@ -12,7 +12,7 @@ function getCurrentMinutes() {
   return now.getHours() * 60 + now.getMinutes()
 }
 
-export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, onDropArchive, placement, size = 380, timerState, onDialTapAdd, onBlockLongPress }) {
+export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, onDropArchive, placement, size = 380 }) {
   const canvasRef = useRef(null)
   const wrapperRef = useRef(null)
   const [currentTime, setCurrentTime] = useState(getCurrentMinutes())
@@ -130,8 +130,8 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       }
     }
 
-    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart, labelInterval, timeFormat, showHourLabels, timerState)
-  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart, themeVersion, labelInterval, timeFormat, showHourLabels, timerState])
+    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart, labelInterval, timeFormat, showHourLabels)
+  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart, themeVersion, labelInterval, timeFormat, showHourLabels])
 
   const handleRangeSelect = useCallback((range) => {
     setZoomRange(range)

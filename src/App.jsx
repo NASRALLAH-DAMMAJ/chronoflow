@@ -20,25 +20,16 @@ import ArchiveList from './components/ArchiveList'
 import ConflictModal from './components/ConflictModal'
 import HeaderMenu from './components/HeaderMenu'
 import SwUpdatePrompt from './components/SwUpdatePrompt'
-import PomodoroTimer from './components/PomodoroTimer'
 import { registerSW } from './sw-register'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
 import { useSwipe, haptic } from './hooks/useSwipe'
 import BottomSheet from './components/BottomSheet'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
-import { getTimerState, resetTimer } from './lib/pomodoro'
 
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'))
 const RecurringRulesPage = React.lazy(() => import('./pages/RecurringRulesPage'))
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'))
-
-function formatTimerTimeDisplay(totalSeconds) {
-  const s = Math.ceil(totalSeconds)
-  const m = Math.floor(s / 60)
-  const sec = s % 60
-  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
-}
 
 function AppContent() {
   const navigate = useNavigate()
@@ -59,8 +50,6 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !localStorage.getItem(LS_KEYS.ONBOARDED) } catch { return true }
   })
-  const [timerState, setTimerState] = useState(() => getTimerState())
-  const [activeTimerBlockId, setActiveTimerBlockId] = useState(null)
   const [syncAnnouncement, setSyncAnnouncement] = useState('')
 
   useEffect(() => {
@@ -182,36 +171,6 @@ function AppContent() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [formOpen, goToDate])
 
-  useEffect(() => {
-    const handleTick = (e) => setTimerState(e.detail || getTimerState())
-    const handleComplete = (e) => {
-      const result = e.detail
-      if (result) {
-        const label = result.blockId ? blocks.find(b => b.id === result.blockId)?.label : null
-        const msg = result.autoStarted
-          ? `${result.phase === 'work' ? 'Focus' : 'Break'} session complete${label ? ` for "${label}"` : ''}!`
-          : `Timer complete${label ? ` for "${label}"` : ''}!`
-        toast.success(msg)
-      }
-      setTimerState(getTimerState())
-    }
-    window.addEventListener('pomodoro-tick', handleTick)
-    window.addEventListener('pomodoro-complete', handleComplete)
-    return () => {
-      window.removeEventListener('pomodoro-tick', handleTick)
-      window.removeEventListener('pomodoro-complete', handleComplete)
-    }
-  }, [blocks, toast])
-
-  const handleTimerStart = useCallback((block) => {
-    setActiveTimerBlockId(block.id)
-    const dur = block.end <= block.start
-      ? block.end + MINUTES_IN_DAY - block.start
-      : block.end - block.start
-    window.dispatchEvent(new CustomEvent('pomodoro-start', { detail: { block, duration: dur } }))
-    haptic('success')
-  }, [])
-
   return (
     <>
       {conflicts && conflicts.length > 0 && (
@@ -255,19 +214,6 @@ function AppContent() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          {timerState.running && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '3px 8px', borderRadius: 6,
-              backgroundColor: timerState.phase === 'work' ? '#EEF2FF' : '#ECFDF5',
-              border: `1px solid ${timerState.phase === 'work' ? '#C7D2FE' : '#A7F3D0'}`,
-              fontSize: 11, fontWeight: 600,
-              color: timerState.phase === 'work' ? '#4F46E5' : '#059669',
-            }}>
-              <span style={{ fontSize: 12 }}>⏱</span>
-              <span>{formatTimerTimeDisplay(timerState.remaining)}</span>
-            </div>
-          )}
           <span style={{ fontSize: 'var(--fs-small)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap', display: 'none' }} className="desktop-date">
             · {formatDateLabel(dateStr)}
           </span>
@@ -331,42 +277,6 @@ function AppContent() {
         animationDelay: '0.1s',
       }}>
         <div ref={dialRef} className="animate-fade-in-scale" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          {timerState.running && (
-            <div className="animate-slide-down" style={{
-              backgroundColor: 'var(--clr-surface)',
-              border: '1px solid var(--clr-border)',
-              borderRadius: 12,
-              padding: '8px 12px',
-              display: 'flex', alignItems: 'center', gap: 12,
-              width: '100%', maxWidth: 380,
-            }}>
-              <PomodoroTimer
-                blockId={activeTimerBlockId}
-                blockLabel={activeTimerBlockId ? blocks.find(b => b.id === activeTimerBlockId)?.label : null}
-                blockDuration={activeTimerBlockId ? (() => {
-                  const b = blocks.find(bl => bl.id === activeTimerBlockId)
-                  if (!b) return null
-                  return b.end <= b.start ? b.end + MINUTES_IN_DAY - b.start : b.end - b.start
-                })() : null}
-                onStateChange={setTimerState}
-              />
-            </div>
-          )}
-          {!timerState.running && selectedId && (
-            <div className="animate-fade-in" style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              backgroundColor: 'var(--clr-surface)',
-              border: '1px solid var(--clr-border)',
-              borderRadius: 8,
-              padding: '6px 12px',
-              width: '100%', maxWidth: 380,
-            }}>
-              <span style={{ fontSize: 12 }}>⏱</span>
-              <span style={{ fontSize: 12, color: 'var(--clr-text-secondary)' }}>
-                Start a timer for "{blocks.find(b => b.id === selectedId)?.label || 'selected task'}"
-              </span>
-            </div>
-          )}
           {placement && (
             <div className="animate-slide-down" style={{
               fontSize: 13, color: 'var(--clr-text-secondary)',
@@ -393,7 +303,6 @@ function AppContent() {
             onPlaceBlock={handlePlaceOnDial}
             onDropArchive={restoreDroppedBlock}
             size={380}
-            timerState={timerState}
           />
         </div>
 

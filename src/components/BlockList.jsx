@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { CATEGORY_COLORS, MINUTES_IN_DAY } from '../store/constants'
 import { IconClock } from '../design-system/icons'
-import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical, Play, ArrowUp } from 'lucide-react'
+import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical, ArrowUp } from 'lucide-react'
 import { minutesToStr, formatDuration } from '../utils'
 
 const iconBtn = {
@@ -27,9 +27,6 @@ const iconBtnPressed = {
   backgroundColor: 'var(--clr-bg-secondary)',
 }
 
-const BLOCK_HEIGHT = 52
-const BUFFER_BLOCKS = 3
-
 function SkeletonCard() {
   return (
     <div
@@ -51,7 +48,7 @@ function SkeletonCard() {
   )
 }
 
-function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDeleteBlock, onArchiveBlock, onToggleLock, onContextMenu, contextBlockId, contextRef, onEditRule, onTimerStart, activeTimerBlockId, style }) {
+function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDeleteBlock, onArchiveBlock, onToggleLock, onContextMenu, contextBlockId, contextRef, onEditRule, style }) {
   const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
   const dur = block.end <= block.start
     ? block.end + MINUTES_IN_DAY - block.start
@@ -76,7 +73,7 @@ function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDel
       style={{
         contain: 'content',
         contentVisibility: 'auto',
-        containIntrinsicSize: `auto ${BLOCK_HEIGHT}px`,
+        containIntrinsicSize: 'auto 52px',
         ...style,
         display: 'flex',
         alignItems: 'stretch',
@@ -111,28 +108,6 @@ function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDel
         </div>
       </div>
       <div className="block-actions-desktop" style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, marginLeft: 4 }}>
-        {onTimerStart && (
-          <button
-            onClick={e => { e.stopPropagation(); onTimerStart(block) }}
-            aria-label={`Start timer for ${block.label}`}
-            style={{
-              ...iconBtnStyle('timer'),
-              color: activeTimerBlockId === block.id ? 'var(--clr-primary)' : undefined,
-            }}
-            title="Start timer"
-            onMouseDown={() => setPressedBtn('timer')}
-            onMouseUp={() => setPressedBtn(null)}
-            onMouseLeave={() => setPressedBtn(null)}
-            onTouchStart={() => setPressedBtn('timer')}
-            onTouchEnd={() => setPressedBtn(null)}
-          >
-            {activeTimerBlockId === block.id ? (
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--clr-primary)' }}>⏱</span>
-            ) : (
-              <Play size={13} />
-            )}
-          </button>
-        )}
         {block.is_recurring && (
           <div style={{ position: 'relative' }}>
             <button
@@ -229,63 +204,41 @@ function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDel
           <Trash2 size={13} />
         </button>
       </div>
-      <div className="block-actions-mobile" style={{ display: 'none', alignItems: 'center', flexShrink: 0, marginLeft: 4, position: 'relative' }}>
-        {onTimerStart && (
-          <button
-            onClick={e => { e.stopPropagation(); onTimerStart(block) }}
-            aria-label={`Start timer for ${block.label}`}
-            style={{
-              ...iconBtnStyle('timer-m'),
-              color: activeTimerBlockId === block.id ? 'var(--clr-primary)' : undefined,
-            }}
-            title="Start timer"
-            onMouseDown={() => setPressedBtn('timer-m')}
-            onMouseUp={() => setPressedBtn(null)}
-            onMouseLeave={() => setPressedBtn(null)}
-            onTouchStart={() => setPressedBtn('timer-m')}
-            onTouchEnd={() => setPressedBtn(null)}
-          >
-            {activeTimerBlockId === block.id ? (
-              <span style={{ fontSize: 10, fontWeight: 700 }}>⏱</span>
-            ) : (
-              <Play size={13} />
-            )}
-          </button>
-        )}
+      <div className="block-actions-mobile" style={{ display: 'none', alignItems: 'center', gap: 1, flexShrink: 0, marginLeft: 4 }}>
         <button
-          onClick={e => { e.stopPropagation(); setMenuBlockId(menuBlockId === block.id ? null : block.id) }}
-          aria-label="More actions"
-          style={iconBtnStyle('more-m')}
-          onMouseDown={() => setPressedBtn('more-m')}
+          onClick={e => { e.stopPropagation(); onEditBlock(block) }}
+          aria-label={`Edit ${block.label}`}
+          style={iconBtnStyle('edit-m')}
+          onMouseDown={() => setPressedBtn('edit-m')}
           onMouseUp={() => setPressedBtn(null)}
           onMouseLeave={() => setPressedBtn(null)}
-          onTouchStart={() => setPressedBtn('more-m')}
+          onTouchStart={() => setPressedBtn('edit-m')}
           onTouchEnd={() => setPressedBtn(null)}
         >
-          <MoreVertical size={13} />
+          <Pencil size={13} />
+        </button>
+        <button
+          onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }}
+          aria-label={`Delete ${block.label}`}
+          style={iconBtnStyle('delete-m')}
+          onMouseDown={() => setPressedBtn('delete-m')}
+          onMouseUp={() => setPressedBtn(null)}
+          onMouseLeave={() => setPressedBtn(null)}
+          onTouchStart={() => setPressedBtn('delete-m')}
+          onTouchEnd={() => setPressedBtn(null)}
+        >
+          <Trash2 size={13} />
         </button>
       </div>
     </div>
   )
 }
 
-export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule, onTimerStart, activeTimerBlockId }) {
-  const [menuBlockId, setMenuBlockId] = useState(null)
-  const menuRef = useRef(null)
+export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   const scrollRef = useRef(null)
   const [isScrolling, setIsScrolling] = useState(false)
   const scrollTimeoutRef = useRef(null)
   const [focusedIndex, setFocusedIndex] = useState(-1)
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuBlockId(null)
-      }
-    }
-    if (menuBlockId) document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [menuBlockId])
 
   const sorted = useMemo(() => [...blocks].sort((a, b) => a.start - b.start), [blocks])
 
@@ -298,12 +251,6 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
   useEffect(() => {
     return () => {
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current)
-    }
-  }, [])
-
-  const scrollToToday = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [])
 
@@ -430,7 +377,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               style={{
                 contain: 'content',
                 contentVisibility: 'auto',
-                containIntrinsicSize: `auto ${BLOCK_HEIGHT}px`,
+                containIntrinsicSize: 'auto 52px',
               }}
             >
               <BlockCard
@@ -446,8 +393,6 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
                 contextBlockId={contextBlockId}
                 contextRef={contextRef}
                 onEditRule={onEditRule}
-                onTimerStart={onTimerStart}
-                activeTimerBlockId={activeTimerBlockId}
                 style={{
                   animation: isFocused ? 'none' : undefined,
                   outline: isFocused ? '2px solid var(--clr-focus)' : undefined,

@@ -3,81 +3,7 @@ import { minutesToStr } from '../../../utils'
 import { TAU } from './utils'
 import { findRunningBlocks } from './blocks'
 
-function formatTimerTime(totalSeconds) {
-  const s = Math.ceil(totalSeconds)
-  const m = Math.floor(s / 60)
-  const sec = s % 60
-  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
-}
-
-function getPhaseLabel(phase) {
-  switch (phase) {
-    case 'work': return 'Focus'
-    case 'shortBreak': return 'Short Break'
-    case 'longBreak': return 'Long Break'
-    default: return 'Timer'
-  }
-}
-
-function drawTimerCenter(ctx, cx, cy, centerR, timerState, text, textSecondary) {
-  const { remaining, progress, phase, mode, pomodoroCount } = timerState
-
-  const phaseColors = {
-    work: '#6366F1',
-    shortBreak: '#4ADE80',
-    longBreak: '#A78BFA',
-  }
-  const phaseColor = phaseColors[phase] || '#6366F1'
-
-  const ringR = centerR - 12
-  const strokeWidth = 4
-
-  ctx.beginPath()
-  ctx.arc(cx, cy, ringR, 0, TAU)
-  ctx.strokeStyle = 'rgba(0,0,0,0.08)'
-  ctx.lineWidth = strokeWidth
-  ctx.stroke()
-
-  if (progress > 0) {
-    const startAngle = -Math.PI / 2
-    const endAngle = startAngle + TAU * Math.min(progress, 1)
-    ctx.beginPath()
-    ctx.arc(cx, cy, ringR, startAngle, endAngle)
-    ctx.strokeStyle = phaseColor
-    ctx.lineWidth = strokeWidth
-    ctx.lineCap = 'round'
-    ctx.stroke()
-    ctx.lineCap = 'butt'
-  }
-
-  const dotAngle = -Math.PI / 2 + TAU * Math.min(progress, 1)
-  const dotX = cx + Math.cos(dotAngle) * ringR
-  const dotY = cy + Math.sin(dotAngle) * ringR
-  ctx.beginPath()
-  ctx.arc(dotX, dotY, 3, 0, TAU)
-  ctx.fillStyle = phaseColor
-  ctx.fill()
-
-  ctx.fillStyle = text
-  ctx.font = 'bold 28px Inter, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(formatTimerTime(remaining), cx, cy - 6)
-
-  ctx.fillStyle = phaseColor
-  ctx.font = 'bold 10px Inter, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  const phaseLabel = getPhaseLabel(phase)
-  const pomodoroLabel = mode === 'pomodoro' ? ` #${pomodoroCount + 1}` : ''
-  ctx.fillText(phaseLabel + pomodoroLabel, cx, cy + 16)
-
-  ctx.fillStyle = textSecondary
-  ctx.font = '10px Inter, sans-serif'
-  ctx.fillText(Math.round(progress * 100) + '%', cx, cy + 30)
-}
-
-export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, text, textSecondary, primary, surface, timerState) {
+export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, text, textSecondary, primary, surface) {
   if (!innerR || innerR < 20) return
   const centerR = innerR - 8
   const isSmall = innerR < 30
@@ -86,16 +12,6 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
   ctx.arc(cx, cy, centerR, 0, TAU)
   ctx.fillStyle = surface
   ctx.fill()
-
-  if (timerState && timerState.running && timerState.remaining > 0) {
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(cx, cy, centerR, 0, TAU)
-    ctx.clip()
-    drawTimerCenter(ctx, cx, cy, centerR, timerState, text, textSecondary)
-    ctx.restore()
-    return
-  }
 
   const now = currentTimeMinutes || 0
   const runningBlocks = findRunningBlocks(blocks, now)
