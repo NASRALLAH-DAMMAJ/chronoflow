@@ -63,8 +63,12 @@ export function setupRealtimeSubscription(supabase, userId, onBlockChange) {
       },
       (payload) => {
         const blockId = payload.new?.id || payload.old?.id
-        if (isEcho(blockId)) return
+        if (isEcho(blockId)) {
+          console.log("[Realtime] Echo detected and ignored:", blockId)
+          return
+        }
         mon.recordPong()
+        console.log("[Realtime] Change received:", payload)
         onBlockChange(payload)
       }
     )
@@ -73,6 +77,7 @@ export function setupRealtimeSubscription(supabase, userId, onBlockChange) {
         reconnectAttempts = 0
         mon.status = 'connected'
         mon.recordPong()
+        console.log("[Realtime] Change received:", payload)
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         mon.status = 'reconnecting'
         scheduleReconnect()
