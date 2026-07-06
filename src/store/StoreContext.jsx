@@ -9,7 +9,8 @@ import { isAuthError } from '../lib/retry'
 import { taskQueue } from '../lib/taskQueue'
 import { storage, verifyIntegrity } from '../lib/storageManager'
 import { blockToDbRecord } from '../lib/db'
-import { setupRealtimeSubscription, markLocalChange, realtimeBlockFromPayload, realtimeRecordFromPayload } from '../lib/realtime'
+import { setupRealtimeSubscription, markLocalChange, realtimeBlockFromPayload, realtimeRecordFromPayload } from '../lib/realtime';
+import { enqueueForSync } from '../lib/syncEngine'
 import { detectConflict, logConflict } from '../lib/conflictDetector'
 import { processSyncQueue, getQueueStats, getSyncStatus, onSyncStatusChange, clearFailedActions } from '../lib/syncEngine'
 
@@ -145,22 +146,6 @@ export function StoreProvider({ children }) {
     while (saveQueueRef.current.length > 0) {
       const { dateStr, blocks, userId, resolve } = saveQueueRef.current.pop()
       try {
-        const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
-        storage.putBlocks(records).catch(() => {})
-        await upsertBlocks(supabase, dateStr, blocks, userId)
-        setDbError(null)
-        resolve()
-      } catch (err) {
-        console.error('[Store] Save failed:', err)
-        const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
-        storage.enqueueSyncAction({ action: 'upsert', table: 'blocks', record_id: '', payload: { blocks: records } }).catch(() => {})
-        if (isAuthError(err)) {
-          setDbError('Session expired — please log in again')
-        } else {
-          setDbError('Save failed: ' + (err.message || 'unknown error'))
-        }
-        resolve()
-      }
     }
     savingRef.current = false
   }, [supabase])

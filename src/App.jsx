@@ -131,10 +131,7 @@ function AppContent() {
     goToDate(d)
   }
 
-  const swipeHandlers = useSwipe({
-    onSwipeLeft: () => goToDay(1),
-    onSwipeRight: () => goToDay(-1),
-  })
+  const swipeHandlers = {}
 
   const todayStr = getTodayStr()
   const isToday = dateStr === todayStr
@@ -151,7 +148,7 @@ function AppContent() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [contextBlockId])
 
-  const formOpen = showForm || editingBlock
+  const formOpen = showForm || !!editingBlock
   const dialRef = useRef(null)
 
   useEffect(() => {
@@ -312,12 +309,12 @@ function AppContent() {
               <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 600, color: 'var(--clr-text)', margin: 0 }}>
                 Blocks
               </h2>
-              <Button variant="primary" size="sm" onClick={() => { setEditingBlock(null); setShowForm(!showForm); setPlacement(null) }}>
+              <Button variant="primary" size="sm" onClick={() => { setEditingBlock(null); setShowForm(true); setPlacement(null) }}>
                 <IconPlus /> Add
               </Button>
             </div>
 
-            {formOpen && !isMobile && (
+            {formOpen && (
               <div className="animate-slide-down" style={{ marginBottom: 16 }}>
                 <BlockForm
                   block={editingBlock}
@@ -376,15 +373,7 @@ function AppContent() {
         </div>
       </div>
 
-      <BottomSheet isOpen={formOpen && isMobile} onClose={closeForm} snapPoint={60}>
-        <BlockForm
-          block={editingBlock}
-          onUpdateBlock={updateBlock}
-          onPlaceBlock={handlePlaceBlock}
-          onClose={closeForm}
-          onToggleLock={editingBlock ? toggleLock : undefined}
-        />
-      </BottomSheet>
+      {/* Mobile-only bottom sheet disabled; using inline form */}
 
       <div
         role="status"
