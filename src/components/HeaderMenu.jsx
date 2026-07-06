@@ -7,7 +7,6 @@ import { fetchBlocksForRange } from '../lib/analytics'
 import { Button } from '../design-system/components'
 import { minutesToStr } from '../utils'
 import { useDarkMode } from '../design-system/hooks/useDarkMode'
-import { IconSun, IconMoon } from '../design-system/icons'
 import { ROUTES, DEFAULT_BEDTIME, DEFAULT_WAKE, SNAP_MINUTES, CATEGORY_COLORS, NO_CATEGORY } from '../store/constants'
 import { BarChart3, Download, LogOut, User, Moon, Sun } from 'lucide-react'
 
@@ -19,7 +18,7 @@ function parseTime(str) {
 export default function HeaderMenu() {
   const navigate = useNavigate()
   const { supabase, user } = useSupabase()
-  const { isDark, toggle } = useDarkMode()
+  const { setTheme: setAppTheme } = useDarkMode()
   const [open, setOpen] = useState(false)
   const menuRef = useRef(null)
   const [sleepStart, setSleepStart] = useState(DEFAULT_BEDTIME)
@@ -38,6 +37,7 @@ export default function HeaderMenu() {
         setSleepStart(data.sleep_start)
         setSleepEnd(data.sleep_end)
         setTheme(data.theme)
+        if (data.theme) setAppTheme(data.theme)
       }
       setSettingsLoaded(true)
     }).catch(() => setSettingsLoaded(true))
@@ -205,9 +205,9 @@ export default function HeaderMenu() {
               { value: 'light', label: 'Light' },
               { value: 'dark', label: 'Dark' },
             ].map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setTheme(opt.value)}
+                <button
+                  key={opt.value}
+                  onClick={() => { setTheme(opt.value); setAppTheme(opt.value) }}
                 style={{
                   flex: 1,
                   padding: '5px 0',

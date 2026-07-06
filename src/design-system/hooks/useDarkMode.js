@@ -49,5 +49,15 @@ export function useDarkMode() {
     })
   }, [])
 
-  return { isDark, toggle }
+  const setTheme = useCallback((value) => {
+    if (value === 'system') {
+      setStoredTheme(null)
+      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches)
+    } else {
+      setStoredTheme(value)
+      setIsDark(value === 'dark')
+    }
+  }, [])
+
+  return { isDark, toggle, setTheme }
 }

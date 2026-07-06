@@ -3,6 +3,7 @@ import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, compu
 import { getTodayStr, MINUTES_IN_DAY } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
 import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock, restoreBlockToDate, restoreBlockToTime, fetchArchivedBlockById } from '../lib/blocks'
+import { fetchSchedule } from '../lib/schedule'
 import { migrateLocalStorage } from '../lib/migrate'
 import { isAuthError } from '../lib/retry'
 import { taskQueue } from '../lib/taskQueue'
@@ -51,7 +52,7 @@ export function StoreProvider({ children }) {
           console.error('[Store] migrateLocalStorage failed:', err)
         })
         if (userIdRef.current !== currentUser) return
-        const blocks = await fetchBlocks(supabase, today)
+        const blocks = await fetchSchedule(supabase, today).catch(() => fetchBlocks(supabase, today))
         if (userIdRef.current !== currentUser) return
         seedBlocks(blocks.map(b => blockToDbRecord(b, today, user.id))).catch(() => {})
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
@@ -161,7 +162,7 @@ export function StoreProvider({ children }) {
     taskQueue.add(
       async ({ onProgress }) => {
         onProgress(10)
-        const blocks = await fetchBlocks(supabase, ds)
+        const blocks = await fetchSchedule(supabase, ds).catch(() => fetchBlocks(supabase, ds))
         onProgress(100)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
