@@ -307,14 +307,27 @@ function AppContent() {
               <div aria-live="polite" style={{ fontSize: 13, color: 'var(--clr-text-tertiary)' }}>
                 Streak: <strong>{streak}</strong> {streak === 1 ? 'day' : 'days'}
               </div>
-              {isToday && !completedDays.includes(dateStr) && (
-                <Button variant="primary" size="sm" onClick={() => { haptic('success'); completeDay(dateStr); toast.success('Day completed! Streak +1') }}>
-                  Complete day
-                </Button>
-              )}
-              {completedDays.includes(dateStr) && (
-                <Badge variant="default">Reviewed</Badge>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {isToday && !completedDays.includes(dateStr) && (
+                  <Button variant="primary" size="sm" onClick={() => { haptic('success'); completeDay(dateStr); toast.success('Day completed! Streak +1') }}>
+                    Complete day
+                  </Button>
+                )}
+                {completedDays.includes(dateStr) && (
+                  <Badge variant="default">Reviewed</Badge>
+                )}
+                <button
+                  onClick={() => navigate(ROUTES.RULES)}
+                  style={{
+                    fontSize: 11, color: 'var(--clr-text-tertiary)',
+                    border: 'none', background: 'none', cursor: 'pointer',
+                    padding: '4px 6px', borderRadius: 4, fontFamily: 'inherit',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Recurring Rules
+                </button>
+              </div>
             </div>
           </Card>
         </div>

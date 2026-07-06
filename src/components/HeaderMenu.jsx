@@ -9,7 +9,7 @@ import { minutesToStr } from '../utils'
 import { useDarkMode } from '../design-system/hooks/useDarkMode'
 import { IconSun, IconMoon } from '../design-system/icons'
 import { ROUTES, DEFAULT_BEDTIME, DEFAULT_WAKE, SNAP_MINUTES, CATEGORY_COLORS, NO_CATEGORY } from '../store/constants'
-import { Settings, BarChart3, Download, Upload, LogOut, User, Moon, Sun } from 'lucide-react'
+import { BarChart3, Download, LogOut, User, Moon, Sun } from 'lucide-react'
 
 function parseTime(str) {
   const [h, m] = str.split(':').map(Number)
@@ -309,14 +309,7 @@ export default function HeaderMenu() {
             </button>
           </div>
 
-          {/* Recurring Rules */}
-          <button
-            onClick={() => { navigate(ROUTES.RULES); setOpen(false) }}
-            style={menuItem}
-          >
-            <Settings size={14} />
-            Recurring Rules
-          </button>
+
         </div>
       )}
     </div>
