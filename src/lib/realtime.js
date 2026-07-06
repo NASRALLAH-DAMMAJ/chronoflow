@@ -145,4 +145,22 @@ export function realtimeBlockFromPayload(row) {
   }
 }
 
+export function realtimeRecordFromPayload(row) {
+  if (!row) return null
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    date: row.date,
+    start_min: row.start_min,
+    duration: row.duration,
+    label: row.label,
+    category: row.category,
+    is_recurring: row.is_recurring || false,
+    parent_rule_id: row.parent_rule_id || null,
+    archived: row.archived || false,
+    locked: row.locked || false,
+    updated_at: row.updated_at || null,
+  }
+}
+
 export const connectionMonitor = createConnectionMonitor()

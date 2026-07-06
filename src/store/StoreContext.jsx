@@ -7,8 +7,11 @@ import { fetchSchedule } from '../lib/schedule'
 import { migrateLocalStorage } from '../lib/migrate'
 import { isAuthError } from '../lib/retry'
 import { taskQueue } from '../lib/taskQueue'
-import { seedBlocks, putBlocks, removeBlock, markBlockArchived, enqueueSyncAction, getBlocksByDate, blockToDbRecord } from '../lib/db'
-import { setupRealtimeSubscription, markLocalChange, realtimeBlockFromPayload } from '../lib/realtime'
+import { storage, verifyIntegrity } from '../lib/storageManager'
+import { blockToDbRecord } from '../lib/db'
+import { setupRealtimeSubscription, markLocalChange, realtimeBlockFromPayload, realtimeRecordFromPayload } from '../lib/realtime'
+import { detectConflict, logConflict } from '../lib/conflictDetector'
+import { processSyncQueue, getQueueStats, getSyncStatus, onSyncStatusChange, clearFailedActions } from '../lib/syncEngine'
 
 const StoreContext = createContext(null)
 
@@ -37,6 +40,45 @@ export function StoreProvider({ children }) {
   const [dbError, setDbError] = useState(null)
   const [archiveVersion, setArchiveVersion] = useState(0)
   const bumpArchiveVersion = useCallback(() => setArchiveVersion(v => v + 1), [])
+  const [syncStatus, setSyncStatus] = useState(getSyncStatus)
+  const [pendingSyncCount, setPendingSyncCount] = useState(0)
+
+  const triggerSync = useCallback(async () => {
+    if (!supabase) return
+    await processSyncQueue(supabase)
+    const stats = await getQueueStats()
+    setPendingSyncCount(stats.pendingCount + stats.failedCount)
+  }, [supabase])
+
+  useEffect(() => {
+    const unsub = onSyncStatusChange(setSyncStatus)
+    return unsub
+  }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+    const interval = setInterval(() => {
+      triggerSync()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [supabase, triggerSync])
+
+  useEffect(() => {
+    if (!supabase) return
+    const handleOnline = () => {
+      triggerSync()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [supabase, triggerSync])
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const stats = await getQueueStats()
+      setPendingSyncCount(stats.pendingCount + stats.failedCount)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (!user || initFetched.current) return
@@ -54,10 +96,18 @@ export function StoreProvider({ children }) {
         await migrateLocalStorage(supabase, user.id).catch(err => {
           console.error('[Store] migrateLocalStorage failed:', err)
         })
+        verifyIntegrity().then(result => {
+          if (!result.ok) console.warn('[Store] Storage integrity check failed:', result.error)
+        }).catch(() => {})
+
+        // Clear stale sync queue items from previous sessions
+        clearFailedActions().catch(() => {})
+        processSyncQueue(supabase).catch(() => {})
+
         if (userIdRef.current !== currentUser) return
 
         // Show cached data immediately
-        getBlocksByDate(today).then(localBlocks => {
+        storage.getBlocksByDate(today).then(localBlocks => {
           if (userIdRef.current !== currentUser) return
           if (localBlocks.length > 0) {
             dispatch({ type: 'LOAD_BLOCKS', payload: localBlocks })
@@ -68,7 +118,7 @@ export function StoreProvider({ children }) {
         // Fetch fresh data from server
         const blocks = await fetchSchedule(supabase, today).catch(() => fetchBlocks(supabase, today))
         if (userIdRef.current !== currentUser) return
-        seedBlocks(blocks.map(b => blockToDbRecord(b, today, user.id))).catch(() => {})
+        storage.seedBlocks(blocks.map(b => blockToDbRecord(b, today, user.id))).catch(() => {})
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch (err) {
         console.error('[Store] Init failed:', err)
@@ -96,14 +146,14 @@ export function StoreProvider({ children }) {
       const { dateStr, blocks, userId, resolve } = saveQueueRef.current.pop()
       try {
         const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
-        putBlocks(records).catch(() => {})
+        storage.putBlocks(records).catch(() => {})
         await upsertBlocks(supabase, dateStr, blocks, userId)
         setDbError(null)
         resolve()
       } catch (err) {
         console.error('[Store] Save failed:', err)
         const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
-        enqueueSyncAction({ action: 'upsert', table: 'blocks', record_id: '', payload: { blocks: records } }).catch(() => {})
+        storage.enqueueSyncAction({ action: 'upsert', table: 'blocks', record_id: '', payload: { blocks: records } }).catch(() => {})
         if (isAuthError(err)) {
           setDbError('Session expired — please log in again')
         } else {
@@ -131,7 +181,7 @@ export function StoreProvider({ children }) {
     const s = stateRef.current
     if (s.loaded && user && supabase && s.dateStr) {
       const records = s.blocks.map(b => blockToDbRecord(b, s.dateStr, user.id))
-      putBlocks(records).catch(() => {})
+      storage.putBlocks(records).catch(() => {})
       return upsertBlocks(supabase, s.dateStr, s.blocks, user.id).catch(err => {
         console.error('[Store] flushSave failed:', err)
       })
@@ -159,9 +209,29 @@ export function StoreProvider({ children }) {
         const block = realtimeBlockFromPayload(newRow)
         if (block) dispatch({ type: 'ADD_BLOCK', payload: block })
       } else if (eventType === 'UPDATE' && newRow) {
+        const remoteBlock = realtimeRecordFromPayload(newRow)
+        const localBlock = stateRef.current.blocks.find(b => b.id === remoteBlock?.id)
+        if (localBlock && remoteBlock) {
+          const conflict = detectConflict(
+            { ...localBlock, updated_at: localBlock.updated_at },
+            { ...remoteBlock, updated_at: remoteBlock.updated_at }
+          )
+          if (conflict && localBlock.revision > 0) {
+            logConflict(conflict)
+            dispatch({ type: 'SET_CONFLICTS', payload: [...(stateRef.current.conflicts || []), conflict] })
+            return
+          }
+        }
         const block = realtimeBlockFromPayload(newRow)
-        if (block) dispatch({ type: 'UPDATE_BLOCK', payload: block })
+        if (block) dispatch({ type: 'UPDATE_BLOCK_SILENT', payload: block })
       } else if (eventType === 'DELETE' && oldRow) {
+        const localBlock = stateRef.current.blocks.find(b => b.id === oldRow.id)
+        if (localBlock && localBlock.revision > 0) {
+          const conflict = { type: 'local-update/remote-delete', localBlock, remoteBlock: { id: oldRow.id } }
+          logConflict(conflict)
+          dispatch({ type: 'SET_CONFLICTS', payload: [...(stateRef.current.conflicts || []), conflict] })
+          return
+        }
         dispatch({ type: 'DELETE_BLOCK', payload: { id: oldRow.id } })
       }
     }
@@ -189,7 +259,7 @@ export function StoreProvider({ children }) {
     await flushSave()
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
-    getBlocksByDate(ds).then(localBlocks => {
+    storage.getBlocksByDate(ds).then(localBlocks => {
       if (gen !== genRef.current) return
       if (localBlocks.length > 0) {
         dispatch({ type: 'LOAD_BLOCKS', payload: localBlocks })
@@ -205,7 +275,7 @@ export function StoreProvider({ children }) {
         onProgress(100)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
-        seedBlocks(blocks.map(b => blockToDbRecord(b, ds, user.id))).catch(() => {})
+        storage.seedBlocks(blocks.map(b => blockToDbRecord(b, ds, user.id))).catch(() => {})
       },
       {
         label: 'Loading day...',
@@ -228,7 +298,7 @@ export function StoreProvider({ children }) {
   const deleteBlockAction = useCallback((id) => {
     markLocalChange(id)
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
-    removeBlock(id).catch(() => {})
+    storage.removeBlock(id).catch(() => {})
     taskQueue.add(
       async () => {
         await deleteBlock(supabase, id)
@@ -238,7 +308,7 @@ export function StoreProvider({ children }) {
   }, [supabase])
 
   const deleteArchivedBlock = useCallback((id) => {
-    removeBlock(id).catch(() => {})
+    storage.removeBlock(id).catch(() => {})
     taskQueue.add(
       async () => {
         await deleteBlock(supabase, id)
@@ -251,7 +321,7 @@ export function StoreProvider({ children }) {
   const archiveBlockAction = useCallback((id) => {
     markLocalChange(id)
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
-    markBlockArchived(id).catch(() => {})
+    storage.markBlockArchived(id).catch(() => {})
     taskQueue.add(
       async () => {
         await archiveBlock(supabase, id)
@@ -334,6 +404,33 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'COMPLETE_DAY', payload: dateStr })
   }, [])
 
+  const resolveConflictAction = useCallback((conflict, strategy) => {
+    dispatch({ type: 'SET_CONFLICTS', payload: [] })
+    if (strategy === 'local-wins') {
+      const block = stateRef.current.blocks.find(b => b.id === conflict.localBlock?.id)
+      if (block) {
+        dispatch({ type: 'UPDATE_BLOCK', payload: block })
+      }
+    } else if (strategy === 'remote-wins' && conflict.remoteBlock) {
+      if (conflict.type === 'local-update/remote-delete') {
+        dispatch({ type: 'DELETE_BLOCK', payload: { id: conflict.localBlock.id } })
+      } else {
+        const block = realtimeBlockFromPayload(conflict.remoteBlock)
+        if (block) dispatch({ type: 'UPDATE_BLOCK_SILENT', payload: block })
+      }
+    }
+  }, [])
+
+  const resolveAllConflicts = useCallback((strategy) => {
+    const conflicts = stateRef.current.conflicts || []
+    conflicts.forEach(c => resolveConflictAction(c, strategy))
+    dispatch({ type: 'SET_CONFLICTS', payload: [] })
+  }, [resolveConflictAction])
+
+  const dismissConflict = useCallback(() => {
+    dispatch({ type: 'SET_CONFLICTS', payload: [] })
+  }, [])
+
   const streak = useMemo(() => computeStreak(state.completedDays), [state.completedDays])
 
   const value = useMemo(() => ({
@@ -343,9 +440,13 @@ export function StoreProvider({ children }) {
     loading: state.loading,
     selectedId: state.selectedId,
     completedDays: state.completedDays,
+    conflicts: state.conflicts || [],
     streak,
     dbError,
     archiveVersion,
+    syncStatus,
+    pendingSyncCount,
+    triggerSync,
     goToDate,
     addBlock,
     updateBlock,
@@ -360,7 +461,10 @@ export function StoreProvider({ children }) {
     selectBlock,
     toggleLock,
     completeDay,
-  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, archiveVersion, goToDate, addBlock, updateBlock, deleteBlockAction, deleteArchivedBlock, archiveBlockAction, restoreBlockAction, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, completeDay])
+    resolveConflict: resolveConflictAction,
+    resolveAllConflicts,
+    dismissConflict,
+  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, state.conflicts, streak, dbError, archiveVersion, syncStatus, pendingSyncCount, triggerSync, goToDate, addBlock, updateBlock, deleteBlockAction, deleteArchivedBlock, archiveBlockAction, restoreBlockAction, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, completeDay, resolveConflictAction, resolveAllConflicts, dismissConflict])
 
   return (
     <StoreContext.Provider value={value}>

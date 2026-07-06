@@ -117,16 +117,15 @@ describe('blockFromDb', () => {
   it('converts DB row to block', () => {
     const row = { id: 'b1', start_min: 60, duration: 60, label: 'Work', category: 'work', is_recurring: false, parent_rule_id: null, locked: false }
     const result = blockFromDb(row)
-    expect(result).toEqual({
-      id: 'b1',
-      start: 60,
-      end: 120,
-      label: 'Work',
-      category: 'work',
-      is_recurring: false,
-      parent_rule_id: null,
-      locked: false,
-    })
+    expect(result.id).toBe('b1')
+    expect(result.start).toBe(60)
+    expect(result.end).toBe(120)
+    expect(result.label).toBe('Work')
+    expect(result.category).toBe('work')
+    expect(result.is_recurring).toBe(false)
+    expect(result.parent_rule_id).toBeNull()
+    expect(result.locked).toBe(false)
+    expect(result.updated_at).toBeNull()
   })
 
   it('handles wrapping block', () => {

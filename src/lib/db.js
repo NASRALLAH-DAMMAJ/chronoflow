@@ -113,6 +113,7 @@ export const blockFromDbRecord = (row) => {
     is_recurring: !!row.is_recurring,
     parent_rule_id: row.parent_rule_id || null,
     locked: !!row.locked,
+    updated_at: row.updated_at || null,
   }
 }
 

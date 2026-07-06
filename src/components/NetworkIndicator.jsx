@@ -10,10 +10,27 @@ const dotBase = {
   flexShrink: 0,
 }
 
-export default function NetworkIndicator() {
-  const { isOffline, slow, justCameOnline } = useOffline()
+const tooltipStyle = {
+  position: 'absolute',
+  top: '100%',
+  right: 0,
+  marginTop: 4,
+  padding: '8px 12px',
+  background: '#1e1e1e',
+  color: '#e0e0e0',
+  borderRadius: 6,
+  fontSize: 12,
+  lineHeight: 1.5,
+  whiteSpace: 'nowrap',
+  zIndex: 1000,
+  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+}
+
+export default function NetworkIndicator({ forceOffline = false, pendingSyncCount = 0 }) {
+  const { isOffline, slow, justCameOnline, type, metered, eventLog } = useOffline(forceOffline)
   const [realtimeStatus, setRealtimeStatus] = React.useState(connectionMonitor.getStatus())
   const [visible, setVisible] = React.useState(false)
+  const [showTooltip, setShowTooltip] = React.useState(false)
 
   React.useEffect(() => {
     setVisible(true)
@@ -46,16 +63,48 @@ export default function NetworkIndicator() {
     title = 'Reconnecting...'
   }
 
+  const queueInfo = pendingSyncCount > 0 ? ` | ${pendingSyncCount} pending changes` : ''
+
   return (
-    <span
-      role="img"
-      aria-label={title}
-      title={title}
-      style={{
-        ...dotBase,
-        backgroundColor: color,
-        animation: justCameOnline ? 'pulse 0.6s ease-in-out 2' : 'none',
-      }}
-    />
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <span
+        role="img"
+        aria-label={title}
+        title={title + queueInfo}
+        style={{
+          ...dotBase,
+          backgroundColor: color,
+          animation: justCameOnline ? 'pulse 0.6s ease-in-out 2' : 'none',
+        }}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onFocus={() => setShowTooltip(true)}
+        onBlur={() => setShowTooltip(false)}
+      />
+      {pendingSyncCount > 0 && (
+        <span
+          style={{
+            fontSize: 10,
+            marginLeft: 2,
+            color: '#f59e0b',
+            fontWeight: 600,
+          }}
+        >
+          ({pendingSyncCount})
+        </span>
+      )}
+      {showTooltip && (
+        <div style={tooltipStyle} role="tooltip">
+          <div><strong>Network:</strong> {title}{isOffline && forceOffline ? ' (forced)' : ''}</div>
+          <div><strong>Connection:</strong> {type}</div>
+          <div><strong>Realtime:</strong> {realtimeStatus}</div>
+          {metered && <div><strong>Metered:</strong> yes</div>}
+          {pendingSyncCount > 0 && <div><strong>Offline queue:</strong> {pendingSyncCount} items</div>}
+          <div style={{ marginTop: 4, fontSize: 10, color: '#999' }}>
+            Last {eventLog.length} event{eventLog.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

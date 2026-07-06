@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { CATEGORY_COLORS, MINUTES_IN_DAY } from '../store/constants'
 import { IconClock } from '../design-system/icons'
-import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical } from 'lucide-react'
+import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical, Play } from 'lucide-react'
 import { minutesToStr, formatDuration } from '../utils'
 
 const iconBtn = {
@@ -19,7 +19,7 @@ const iconBtn = {
   flexShrink: 0,
 }
 
-export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
+export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule, onTimerStart, activeTimerBlockId }) {
   const [menuBlockId, setMenuBlockId] = useState(null)
   const menuRef = useRef(null)
 
@@ -106,6 +106,23 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               </div>
             </div>
             <div className="block-actions-desktop" style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, marginLeft: 4 }}>
+              {onTimerStart && (
+                <button
+                  onClick={e => { e.stopPropagation(); onTimerStart(block) }}
+                  aria-label={`Start timer for ${block.label}`}
+                  style={{
+                    ...iconBtn,
+                    color: activeTimerBlockId === block.id ? 'var(--clr-primary)' : undefined,
+                  }}
+                  title="Start timer"
+                >
+                  {activeTimerBlockId === block.id ? (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--clr-primary)' }}>⏱</span>
+                  ) : (
+                    <Play size={13} />
+                  )}
+                </button>
+              )}
               {block.is_recurring && (
                 <div style={{ position: 'relative' }}>
                   <button
@@ -166,6 +183,23 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               </button>
             </div>
             <div className="block-actions-mobile" style={{ display: 'none', alignItems: 'center', flexShrink: 0, marginLeft: 4, position: 'relative' }}>
+              {onTimerStart && (
+                <button
+                  onClick={e => { e.stopPropagation(); onTimerStart(block) }}
+                  aria-label={`Start timer for ${block.label}`}
+                  style={{
+                    ...iconBtn,
+                    color: activeTimerBlockId === block.id ? 'var(--clr-primary)' : undefined,
+                  }}
+                  title="Start timer"
+                >
+                  {activeTimerBlockId === block.id ? (
+                    <span style={{ fontSize: 10, fontWeight: 700 }}>⏱</span>
+                  ) : (
+                    <Play size={13} />
+                  )}
+                </button>
+              )}
               <button
                 onClick={e => { e.stopPropagation(); setMenuBlockId(menuBlockId === block.id ? null : block.id) }}
                 aria-label="More actions"

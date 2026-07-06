@@ -10,6 +10,7 @@ describe('initialState', () => {
       loaded: false,
       selectedId: null,
       completedDays: [],
+      conflicts: [],
     })
   })
 })
@@ -175,7 +176,9 @@ describe('blockReducer', () => {
       const state = { ...initialState, loaded: false }
       const blocks = [{ id: 'b1', start: 0, end: 60, label: 'A', category: 'other', tags: [] }]
       const result = blockReducer(state, { type: 'LOAD_BLOCKS', payload: blocks })
-      expect(result.blocks).toEqual(blocks)
+      expect(result.blocks).toHaveLength(1)
+      expect(result.blocks[0].id).toBe('b1')
+      expect(result.blocks[0].revision).toBe(0)
       expect(result.loaded).toBe(true)
     })
   })
