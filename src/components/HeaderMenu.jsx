@@ -260,6 +260,17 @@ export default function HeaderMenu() {
 
           <div style={{ height: 1, backgroundColor: 'var(--clr-border)', margin: '4px 12px' }} />
 
+          {/* Settings */}
+          <button
+            onClick={() => { navigate(ROUTES.SETTINGS); setOpen(false) }}
+            style={menuItem}
+          >
+            <User size={14} />
+            Settings
+          </button>
+
+          <div style={{ height: 1, backgroundColor: 'var(--clr-border)', margin: '4px 12px' }} />
+
           {/* Analytics Summary */}
           <div style={sectionLabel}>Analytics (30d)</div>
           <div style={{ padding: '4px 12px 8px' }}>

@@ -22,6 +22,7 @@ import { useSwipe, haptic } from './hooks/useSwipe'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'))
 const RecurringRulesPage = React.lazy(() => import('./pages/RecurringRulesPage'))
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'))
 
@@ -368,6 +369,13 @@ export default function App() {
         <React.Suspense fallback={<PageSpinner />}>
           <Routes>
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+          <Route path={ROUTES.SETTINGS} element={
+            <ProtectedRoute>
+              <ErrorBoundary name="Settings">
+                <SettingsPage />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          } />
           <Route path={ROUTES.RULES} element={
             <ProtectedRoute>
               <ErrorBoundary name="Recurring Rules">

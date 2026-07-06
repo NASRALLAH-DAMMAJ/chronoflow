@@ -28,6 +28,16 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
   const [labelInterval, setLabelInterval] = useState(() => {
     try { return parseInt(localStorage.getItem('chrono_labelInterval')) || 180 } catch { return 180 }
   })
+  const [showHourLabels, setShowHourLabels] = useState(() => {
+    try { return localStorage.getItem('chrono_showHourLabels') !== 'false' } catch { return true }
+  })
+  useEffect(() => {
+    const handler = () => {
+      try { setShowHourLabels(localStorage.getItem('chrono_showHourLabels') !== 'false') } catch {}
+    }
+    window.addEventListener('chrono-setting-changed', handler)
+    return () => window.removeEventListener('chrono-setting-changed', handler)
+  }, [])
 
   useEffect(() => {
     const el = wrapperRef.current
@@ -109,8 +119,8 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       }
     }
 
-    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart, labelInterval, timeFormat)
-  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart, themeVersion, labelInterval, timeFormat])
+    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart, labelInterval, timeFormat, showHourLabels)
+  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart, themeVersion, labelInterval, timeFormat, showHourLabels])
 
   const handleRangeSelect = useCallback((range) => {
     setZoomRange(range)
@@ -297,14 +307,11 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         onKeyDown={handleKeyDown}
       />
       <div style={{
-        position: 'absolute',
-        top: 4,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10,
         display: 'flex',
+        justifyContent: 'center',
         alignItems: 'center',
         gap: 4,
+        marginTop: 8,
       }}>
         <button
           onClick={() => setShowRangeSelector(true)}
@@ -355,7 +362,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         </button>
         <button
           onClick={() => {
-            const intervals = [0, 60, 120, 180, 240, 360, 720]
+            const intervals = [0, 60, 120, 180, 240, 360, 720, 1440]
             const idx = intervals.indexOf(labelInterval)
             const next = intervals[(idx + 1) % intervals.length]
             setLabelInterval(next)
@@ -370,7 +377,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
             cursor: 'pointer', fontFamily: 'var(--ff-mono)',
           }}
         >
-          {labelInterval === 0 ? '--' : labelInterval / 60 + 'h'}
+          {labelInterval === 0 ? '--' : labelInterval === 1440 ? 'Full' : labelInterval / 60 + 'h'}
         </button>
       </div>
 

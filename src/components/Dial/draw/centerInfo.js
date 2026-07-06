@@ -63,8 +63,10 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
     }
   } else {
     const availH = centerR * 2 - 40
-    const slotH = Math.max(12, Math.min(20, Math.floor(availH / runningBlocks.length)))
-    const listH = runningBlocks.length * slotH
+    const slotH = Math.max(24, Math.min(28, Math.floor(availH / runningBlocks.length)))
+    const visibleCount = Math.min(runningBlocks.length, Math.max(1, Math.floor(availH / slotH)))
+    const truncated = runningBlocks.length > visibleCount
+    const listH = visibleCount * slotH
     const startY = cy - listH / 2 + slotH / 2
 
     ctx.fillStyle = primary
@@ -75,10 +77,10 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
     ctx.fillStyle = textSecondary
     ctx.fillText(runningBlocks.length + ' tasks running', cx, cy - listH / 2 - 2)
 
-    const labelMaxLen = slotH < 16 ? 6 : 10
-    const labelFontSize = slotH < 16 ? 9 : 11
+    const labelMaxLen = 12
+    const labelFontSize = 12
 
-    for (let i = 0; i < runningBlocks.length; i++) {
+    for (let i = 0; i < visibleCount; i++) {
       const b = runningBlocks[i]
       const y = startY + i * slotH
 
@@ -91,7 +93,7 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
       ctx.arc(cx - centerR + 16, y, 4, 0, TAU)
       ctx.fill()
 
-      const label = b.label.length > labelMaxLen ? b.label.slice(0, labelMaxLen - 1) + '…' : b.label
+      const label = b.label.length > labelMaxLen ? b.label.slice(0, labelMaxLen - 1) + '\u2026' : b.label
       ctx.fillStyle = text
       ctx.font = labelFontSize + 'px Inter, sans-serif'
       ctx.textAlign = 'left'
@@ -102,6 +104,14 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
       ctx.font = labelFontSize + 'px Inter, sans-serif'
       ctx.fillText(remaining + 'm', cx + centerR - 10, y + 1)
       ctx.textAlign = 'center'
+    }
+
+    if (truncated) {
+      const remainder = runningBlocks.length - visibleCount
+      ctx.fillStyle = textSecondary
+      ctx.font = '10px Inter, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('+' + remainder + ' more', cx, startY + visibleCount * slotH)
     }
   }
 

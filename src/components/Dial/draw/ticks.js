@@ -48,8 +48,8 @@ export function drawHourTicks(ctx, cx, cy, outerR, innerR, color, borderColor, z
   }
 }
 
-export function drawHourLabels(ctx, cx, cy, outerR, color, zoomRange, labelInterval = 180, timeFormat = '24h') {
-  if (!labelInterval) return
+export function drawHourLabels(ctx, cx, cy, outerR, color, zoomRange, labelInterval = 180, timeFormat = '24h', showHourLabels = true) {
+  if (!labelInterval || !showHourLabels) return
 
   ctx.fillStyle = color
   ctx.font = 'bold 12px Inter, sans-serif'

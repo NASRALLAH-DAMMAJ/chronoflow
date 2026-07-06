@@ -5,7 +5,7 @@ import { drawCurrentTime } from './currentTime'
 import { drawCenterInfo } from './centerInfo'
 import { drawPlacement } from './placement'
 
-export function drawDial(ctx, cx, cy, radius, blocks, selectedId, currentTimeMinutes, colors, zoomRange, placement, placementPos, placementStart, labelInterval = 180, timeFormat = '24h') {
+export function drawDial(ctx, cx, cy, radius, blocks, selectedId, currentTimeMinutes, colors, zoomRange, placement, placementPos, placementStart, labelInterval = 180, timeFormat = '24h', showHourLabels = true) {
   const { bg, border, text, textSecondary, primary, surface } = colors
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
@@ -14,7 +14,7 @@ export function drawDial(ctx, cx, cy, radius, blocks, selectedId, currentTimeMin
 
   drawBackground(ctx, cx, cy, radius, innerR, bg, border, surface)
   drawHourTicks(ctx, cx, cy, radius, innerR, textSecondary, border, zoomRange, labelInterval)
-  drawHourLabels(ctx, cx, cy, radius, text, zoomRange, labelInterval, timeFormat)
+  drawHourLabels(ctx, cx, cy, radius, text, zoomRange, labelInterval, timeFormat, showHourLabels)
   drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange)
   drawCurrentTime(ctx, cx, cy, innerR, arcWidth, currentTimeMinutes, primary, zoomRange)
 

@@ -9,15 +9,30 @@ export function SupabaseProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setSession(session)
-        setUser(session?.user ?? null)
+    const hash = window.location.hash
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
+
+    if (hashParams.has('access_token')) {
+      supabase.auth.setSession({
+        access_token: hashParams.get('access_token'),
+        refresh_token: hashParams.get('refresh_token'),
+      }).then(({ data: { session }, error }) => {
+        if (!error && session) {
+          setSession(session)
+          setUser(session.user)
+          window.history.replaceState(null, '', window.location.pathname)
+        }
         setLoading(false)
-      })
-      .catch(() => {
-        setLoading(false)
-      })
+      }).catch(() => setLoading(false))
+    } else {
+      supabase.auth.getSession()
+        .then(({ data: { session } }) => {
+          setSession(session)
+          setUser(session?.user ?? null)
+          setLoading(false)
+        })
+        .catch(() => setLoading(false))
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
