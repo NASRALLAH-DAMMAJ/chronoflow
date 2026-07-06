@@ -24,6 +24,7 @@ import PomodoroTimer from './components/PomodoroTimer'
 import { registerSW } from './sw-register'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
 import { useSwipe, haptic } from './hooks/useSwipe'
+import BottomSheet from './components/BottomSheet'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 import { getTimerState, resetTimer } from './lib/pomodoro'
@@ -47,12 +48,30 @@ function AppContent() {
   const toast = useToast()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 720)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 720)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
   const [placement, setPlacement] = useState(null)
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !localStorage.getItem(LS_KEYS.ONBOARDED) } catch { return true }
   })
   const [timerState, setTimerState] = useState(() => getTimerState())
   const [activeTimerBlockId, setActiveTimerBlockId] = useState(null)
+  const [syncAnnouncement, setSyncAnnouncement] = useState('')
+
+  useEffect(() => {
+    if (syncStatus === 'syncing') {
+      setSyncAnnouncement('Syncing changes...')
+    } else if (syncStatus === 'error') {
+      setSyncAnnouncement('Sync failed. Changes will retry automatically.')
+    } else if (syncStatus === 'idle' && pendingSyncCount === 0) {
+      setSyncAnnouncement('All changes synced successfully.')
+    }
+  }, [syncStatus, pendingSyncCount])
 
   function dismissOnboarding() {
     try { localStorage.setItem(LS_KEYS.ONBOARDED, '1') } catch {}
@@ -252,7 +271,7 @@ function AppContent() {
           <span style={{ fontSize: 'var(--fs-small)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap', display: 'none' }} className="desktop-date">
             · {formatDateLabel(dateStr)}
           </span>
-          <Button variant="ghost" size="sm" onClick={() => goToDay(-1)} aria-label="Previous day" style={{ display: 'flex', padding: '4px 6px' }}>
+          <Button variant="ghost" size="sm" onClick={() => goToDay(-1)} aria-label="Previous day" style={{ display: 'flex', padding: '8px 10px', minHeight: 44, minWidth: 44 }}>
             <IconChevronLeft />
           </Button>
           <input
@@ -261,16 +280,17 @@ function AppContent() {
             onChange={e => goToDate(new Date(e.target.value + 'T00:00:00'))}
             style={{
               fontSize: 13,
-              padding: '4px 8px',
+              padding: '8px 10px',
               fontFamily: 'var(--ff-body)',
               color: 'var(--clr-text)',
               backgroundColor: 'var(--clr-surface)',
               border: '2px solid var(--clr-border)',
               borderRadius: 6,
               maxWidth: 140,
+              minHeight: 44,
             }}
           />
-          <Button variant="ghost" size="sm" onClick={() => goToDay(1)} aria-label="Next day" style={{ display: 'flex', padding: '4px 6px' }}>
+          <Button variant="ghost" size="sm" onClick={() => goToDay(1)} aria-label="Next day" style={{ display: 'flex', padding: '8px 10px', minHeight: 44, minWidth: 44 }}>
             <IconChevronRight />
           </Button>
           {!isToday && (
@@ -278,7 +298,7 @@ function AppContent() {
               Today
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={toggle} aria-label={isDark ? 'Switch to light' : 'Switch to dark'} style={{ display: 'flex', padding: '4px 6px' }}>
+          <Button variant="ghost" size="sm" onClick={toggle} aria-label={isDark ? 'Switch to light' : 'Switch to dark'} style={{ display: 'flex', padding: '8px 10px', minHeight: 44, minWidth: 44 }}>
             {isDark ? <IconSun /> : <IconMoon />}
           </Button>
           <HeaderMenu />
@@ -388,7 +408,7 @@ function AppContent() {
               </Button>
             </div>
 
-            {formOpen && (
+            {formOpen && !isMobile && (
               <div className="animate-slide-down" style={{ marginBottom: 16 }}>
                 <BlockForm
                   block={editingBlock}
@@ -437,8 +457,8 @@ function AppContent() {
                   style={{
                     fontSize: 11, color: 'var(--clr-text-tertiary)',
                     border: 'none', background: 'none', cursor: 'pointer',
-                    padding: '4px 6px', borderRadius: 4, fontFamily: 'inherit',
-                    whiteSpace: 'nowrap',
+                    padding: '8px 10px', borderRadius: 4, fontFamily: 'inherit',
+                    whiteSpace: 'nowrap', minHeight: 44, minWidth: 44,
                   }}
                 >
                   Recurring Rules
@@ -447,6 +467,25 @@ function AppContent() {
             </div>
           </Card>
         </div>
+      </div>
+
+      <BottomSheet isOpen={formOpen && isMobile} onClose={closeForm} snapPoint={60}>
+        <BlockForm
+          block={editingBlock}
+          onUpdateBlock={updateBlock}
+          onPlaceBlock={handlePlaceBlock}
+          onClose={closeForm}
+          onToggleLock={editingBlock ? toggleLock : undefined}
+        />
+      </BottomSheet>
+
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {syncAnnouncement}
       </div>
 
       <footer style={{ textAlign: 'center', padding: 'var(--sp-6) 0', color: 'var(--clr-text-tertiary)', fontSize: 'var(--fs-caption)', marginTop: 'auto' }}>

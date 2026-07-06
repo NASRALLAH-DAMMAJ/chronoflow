@@ -1,3 +1,5 @@
+import { hapticSuccess } from './haptics'
+
 const POMODORO_WORK = 25 * 60
 const POMODORO_SHORT_BREAK = 5 * 60
 const POMODORO_LONG_BREAK = 15 * 60
@@ -37,6 +39,7 @@ function tick(now) {
     state.running = false
     state.paused = false
     state.rafId = null
+    hapticSuccess()
 
     if (state.mode === 'pomodoro') {
       if (completedPhase === 'work') {

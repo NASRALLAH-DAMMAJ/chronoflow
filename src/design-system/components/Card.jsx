@@ -5,13 +5,13 @@ export function Card({ children, padding = 'var(--sp-4)', variant = 'default', s
   const shadow = variant === 'elevated' ? 'var(--shadow-modal)' : 'var(--shadow-card)'
   return (
     <div
+      className="card-transition"
       style={{
         backgroundColor: bg,
         borderRadius: 'var(--radius-lg)',
         boxShadow: shadow,
         padding,
         border: '1px solid var(--clr-border)',
-        transition: 'box-shadow 0.2s cubic-bezier(0.4,0,0.2,1)',
         ...style,
       }}
       {...props}

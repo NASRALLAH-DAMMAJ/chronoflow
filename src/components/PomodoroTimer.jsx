@@ -139,6 +139,7 @@ export default function PomodoroTimer({ blockId, blockLabel, blockDuration, onSt
         <button
           onClick={handleStart}
           style={startBtnStyle}
+          aria-label={`Start ${mode === 'task' ? 'task' : 'pomodoro'} timer`}
           onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
           onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
         >
@@ -189,13 +190,13 @@ export default function PomodoroTimer({ blockId, blockLabel, blockDuration, onSt
           <span style={subTextStyle}>{Math.round(timer.progress * 100)}%</span>
         </div>
       </div>
-      <div style={controlsStyle}>
+      <div style={controlsStyle} role="group" aria-label="Timer controls">
         {timer.paused ? (
-          <button onClick={handleResume} style={controlBtnStyle} title="Resume">▶</button>
+          <button onClick={handleResume} style={controlBtnStyle} aria-label="Resume timer" title="Resume">▶</button>
         ) : (
-          <button onClick={handlePause} style={controlBtnStyle} title="Pause">⏸</button>
+          <button onClick={handlePause} style={controlBtnStyle} aria-label="Pause timer" title="Pause">⏸</button>
         )}
-        <button onClick={handleReset} style={{ ...controlBtnStyle, color: '#EF4444' }} title="Reset">■</button>
+        <button onClick={handleReset} style={{ ...controlBtnStyle, color: '#EF4444' }} aria-label="Reset timer" title="Reset">■</button>
       </div>
     </div>
   )

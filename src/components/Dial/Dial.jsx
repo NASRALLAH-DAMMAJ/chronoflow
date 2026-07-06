@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { drawDial } from './DialCanvas'
 import { useDialInteraction } from './useDialInteraction'
+import { useDialGesture } from '../../hooks/useDialGesture'
 import { toWorldMinute } from './zoom-utils'
 import { CATEGORY_COLORS, MINUTES_IN_DAY, DIAL, SNAP_MINUTES } from '../../store/constants'
 import { minutesToStr, snapToGrid } from '../../utils'
@@ -11,7 +12,7 @@ function getCurrentMinutes() {
   return now.getHours() * 60 + now.getMinutes()
 }
 
-export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, onDropArchive, placement, size = 380, timerState }) {
+export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, onDropArchive, placement, size = 380, timerState, onDialTapAdd, onBlockLongPress }) {
   const canvasRef = useRef(null)
   const wrapperRef = useRef(null)
   const [currentTime, setCurrentTime] = useState(getCurrentMinutes())
@@ -79,6 +80,16 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     onResizeBlockStart,
     onSelectBlock,
     zoomRange,
+    disabled: !!placement,
+  })
+
+  const gestureHandlers = useDialGesture({
+    blocks: blocksWithColor,
+    onSelectBlock,
+    onAddBlock: onDialTapAdd,
+    onLongPressBlock: onBlockLongPress,
+    zoomRange,
+    containerRef: wrapperRef,
     disabled: !!placement,
   })
 
@@ -279,7 +290,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         transition: 'outline 0.15s ease',
       }}
     >
-      <div className="sr-only" aria-live="polite">
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
         {displayBlocks.length > 0
           ? `Current time: ${minutesToStr(currentTime)}. ${displayBlocks.length} block${displayBlocks.length !== 1 ? 's' : ''} scheduled.`
           : `Current time: ${minutesToStr(currentTime)}. No blocks scheduled.`
@@ -288,7 +299,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       <canvas
         ref={canvasRef}
         role="img"
-        aria-label={`24-hour time dial showing ${minutesToStr(currentTime)}. ${displayBlocks.length} time block${displayBlocks.length !== 1 ? 's' : ''}.`}
+        aria-label={`24-hour time dial. Current time: ${minutesToStr(currentTime)}. ${displayBlocks.length} block${displayBlocks.length !== 1 ? 's' : ''} scheduled. Use arrow keys to navigate. Space to select. Escape to deselect.`}
         aria-roledescription="Interactive circular time dial"
         tabIndex={0}
         style={{
@@ -305,6 +316,9 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
         onPointerMove={placement ? handlePlacePointerMove : handlers.onPointerMove}
         onPointerUp={placement ? handlePlacePointerUp : handlers.onPointerUp}
         onPointerLeave={placement ? handlePlacePointerLeave : handlers.onPointerLeave}
+        onTouchStart={gestureHandlers.onTouchStart}
+        onTouchMove={gestureHandlers.onTouchMove}
+        onTouchEnd={gestureHandlers.onTouchEnd}
         onKeyDown={handleKeyDown}
       />
       <div style={{
@@ -321,7 +335,8 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            padding: '4px 10px',
+            padding: '8px 12px',
+            minHeight: 44,
             borderRadius: 6,
             backgroundColor: 'var(--clr-surface-elevated)',
             border: '1px solid var(--clr-border)',
@@ -330,6 +345,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
             color: 'var(--clr-text-secondary)',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
+            touchAction: 'manipulation',
           }}
         >
           {zoomRange
@@ -352,11 +368,13 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
           }}
           title="Toggle 12h/24h time format"
           style={{
-            padding: '4px 6px', borderRadius: 6, fontSize: 10,
+            padding: '8px 10px', borderRadius: 6, fontSize: 10,
             backgroundColor: 'var(--clr-surface-elevated)',
             border: '1px solid var(--clr-border)',
             color: 'var(--clr-text-secondary)',
             cursor: 'pointer', fontFamily: 'var(--ff-mono)',
+            minHeight: 44, minWidth: 44,
+            touchAction: 'manipulation',
           }}
         >
           {timeFormat}
@@ -371,11 +389,13 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
           }}
           title="Change label interval"
           style={{
-            padding: '4px 6px', borderRadius: 6, fontSize: 10,
+            padding: '8px 10px', borderRadius: 6, fontSize: 10,
             backgroundColor: 'var(--clr-surface-elevated)',
             border: '1px solid var(--clr-border)',
             color: 'var(--clr-text-secondary)',
             cursor: 'pointer', fontFamily: 'var(--ff-mono)',
+            minHeight: 44, minWidth: 44,
+            touchAction: 'manipulation',
           }}
         >
           {labelInterval === 0 ? '--' : labelInterval === 1440 ? 'Full' : labelInterval / 60 + 'h'}

@@ -15,6 +15,13 @@ function setStoredTheme(value) {
   } catch {}
 }
 
+function triggerThemeTransition() {
+  const overlay = document.createElement('div')
+  overlay.className = 'theme-transition-overlay active'
+  document.body.appendChild(overlay)
+  setTimeout(() => overlay.remove(), 400)
+}
+
 export function useDarkMode() {
   const prefersDark = typeof window !== 'undefined'
     && window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -45,6 +52,7 @@ export function useDarkMode() {
     setIsDark(prev => {
       const next = !prev
       setStoredTheme(next ? 'dark' : 'light')
+      triggerThemeTransition()
       return next
     })
   }, [])
@@ -57,6 +65,7 @@ export function useDarkMode() {
       setStoredTheme(value)
       setIsDark(value === 'dark')
     }
+    triggerThemeTransition()
   }, [])
 
   return { isDark, toggle, setTheme }

@@ -68,7 +68,7 @@ const styles = {
   statusCompleted: { backgroundColor: '#D1FAE5', color: '#059669' },
   statusError: { backgroundColor: '#FEE2E2', color: '#DC2626' },
   statusCancelled: { backgroundColor: '#F3F4F6', color: '#6B7280' },
-  statusPending: { backgroundColor: '#FEF3C7', color: '#D97706' },
+  statusPending: { backgroundColor: '#FEF3C7', color: '#92400E' },
   closeBtn: {
     position: 'absolute',
     top: 8,

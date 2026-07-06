@@ -113,7 +113,7 @@ export function BlockForm({ block, onUpdateBlock, onPlaceBlock, onClose, onToggl
               padding: '6px 12px',
               fontSize: 13,
               fontFamily: 'var(--ff-body)',
-              color: block.locked ? '#D97706' : 'var(--clr-text-secondary)',
+              color: block.locked ? '#92400E' : 'var(--clr-text-secondary)',
               backgroundColor: 'transparent',
               border: '1px solid var(--clr-border)',
               borderRadius: 6,
