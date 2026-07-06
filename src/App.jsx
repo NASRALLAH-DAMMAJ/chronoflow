@@ -15,6 +15,7 @@ import { useSupabase } from './lib/SupabaseContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
 import NetworkIndicator from './components/NetworkIndicator'
+import ArchiveList from './components/ArchiveList'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
 import { useSwipe, haptic } from './hooks/useSwipe'
 import LoginPage from './pages/LoginPage'
@@ -22,14 +23,13 @@ import ProtectedRoute from './pages/ProtectedRoute'
 
 const RecurringRulesPage = React.lazy(() => import('./pages/RecurringRulesPage'))
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'))
-const ArchivePage = React.lazy(() => import('./pages/ArchivePage'))
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'))
 
 function AppContent() {
   const navigate = useNavigate()
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
-  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, restoreBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, goToDate, completeDay } = useStore()
   const toast = useToast()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
@@ -210,12 +210,7 @@ function AppContent() {
           }}>
             Analytics
           </Link>
-          <Link to={ROUTES.ARCHIVE} style={{
-            fontSize: 12, color: 'var(--clr-text-secondary)',
-            textDecoration: 'none', padding: '4px 8px',
-          }}>
-            Archive
-          </Link>
+
           <Link to={ROUTES.SETTINGS} style={{
             fontSize: 12, color: 'var(--clr-text-secondary)',
             textDecoration: 'none', padding: '4px 8px',
@@ -305,6 +300,7 @@ function AppContent() {
               </div>
             )}
 
+            <ArchiveList onRestore={restoreBlock} />
             <div aria-live="polite" aria-label="Time blocks">
               <BlockList
                 blocks={blocks}
@@ -391,13 +387,6 @@ export default function App() {
             <ProtectedRoute>
               <ErrorBoundary name="Analytics">
                 <AnalyticsPage />
-              </ErrorBoundary>
-            </ProtectedRoute>
-          } />
-          <Route path={ROUTES.ARCHIVE} element={
-            <ProtectedRoute>
-              <ErrorBoundary name="Archive">
-                <ArchivePage />
               </ErrorBoundary>
             </ProtectedRoute>
           } />

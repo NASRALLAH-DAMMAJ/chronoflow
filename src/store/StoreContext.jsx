@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback, u
 import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, computeStreak } from './reducer'
 import { getTodayStr } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
-import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock } from '../lib/blocks'
+import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock, restoreBlockToDate, fetchArchivedBlockById } from '../lib/blocks'
 import { migrateLocalStorage } from '../lib/migrate'
 import { isAuthError } from '../lib/retry'
 import { taskQueue } from '../lib/taskQueue'
@@ -205,6 +205,19 @@ export function StoreProvider({ children }) {
     )
   }, [supabase])
 
+  const restoreBlockAction = useCallback(async (id) => {
+    const block = await fetchArchivedBlockById(supabase, user.id, id)
+    if (!block) return
+    const restored = { ...block, archived: false, date: stateRef.current.dateStr }
+    dispatch({ type: 'ADD_BLOCK', payload: restored })
+    taskQueue.add(
+      async () => {
+        await restoreBlockToDate(supabase, id, stateRef.current.dateStr)
+      },
+      { label: 'Restoring block...', priority: 'normal', timeout: 10000 }
+    )
+  }, [supabase, user])
+
   const moveBlock = useCallback((id, newStart) => {
     dispatch({ type: 'MOVE_BLOCK', payload: { id, newStart } })
   }, [])
@@ -249,6 +262,7 @@ export function StoreProvider({ children }) {
     updateBlock,
     deleteBlock: deleteBlockAction,
     archiveBlock: archiveBlockAction,
+    restoreBlock: restoreBlockAction,
     moveBlock,
     resizeBlock,
     resizeBlockStart,

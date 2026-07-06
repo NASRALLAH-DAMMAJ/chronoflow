@@ -1,5 +1,5 @@
 import { MINUTES_IN_DAY, TABLES, BLOCK_CATEGORIES } from '../store/constants'
-import { withRetry, isAuthError } from './retry'
+import { withRetry } from './retry'
 
 const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,locked'
 
@@ -145,6 +145,33 @@ export async function restoreBlock(supabase, id) {
       .eq('id', id)
 
     if (error) throw error
+  })
+}
+
+export async function restoreBlockToDate(supabase, id, date) {
+  if (!id) throw new Error('Block id required for restore')
+  return withRetry(async () => {
+    const { error } = await supabase
+      .from(TABLES.BLOCKS)
+      .update({ archived: false, date })
+      .eq('id', id)
+
+    if (error) throw error
+  })
+}
+
+export async function fetchArchivedBlockById(supabase, userId, id) {
+  if (!id) throw new Error('Block id required')
+  return withRetry(async () => {
+    const { data, error } = await supabase
+      .from(TABLES.BLOCKS)
+      .select(ARCHIVED_FIELDS)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single()
+
+    if (error) throw error
+    return data ? archivedBlockFromDb(data) : null
   })
 }
 
