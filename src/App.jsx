@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS, ROUTES, LS_KEYS, SLEEP_CATEGORY, MINUTES_IN_DAY, SNAP_MINUTES } from './store'
+import { StoreProvider, useStore, getTodayStr, ROUTES, LS_KEYS, MINUTES_IN_DAY, SNAP_MINUTES } from './store'
 import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
 import { BlockList } from './components/BlockList'
