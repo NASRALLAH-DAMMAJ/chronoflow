@@ -9,7 +9,7 @@ function getCurrentMinutes() {
   return now.getHours() * 60 + now.getMinutes()
 }
 
-export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, placement, size = 380 }) {
+export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, onResizeBlock, onResizeBlockStart, onSelectBlock, onPlaceBlock, onDropArchive, placement, size = 380 }) {
   const canvasRef = useRef(null)
   const wrapperRef = useRef(null)
   const [currentTime, setCurrentTime] = useState(getCurrentMinutes())
@@ -291,14 +291,63 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     setPlacementPos(null)
   }, [placement, placementStart])
 
+  const [dragOver, setDragOver] = useState(false)
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    if (!dragOver) setDragOver(true)
+  }, [dragOver])
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    setDragOver(false)
+    if (!onDropArchive) return
+    const blockId = e.dataTransfer.getData('application/chrono-block-id')
+    if (!blockId) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const cx = rect.width / 2
+    const cy = rect.height / 2
+    const dx = x - cx
+    const dy = y - cy
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    const radius = Math.min(cx, cy) - 20
+    const innerR = radius * DIAL.INNER_RADIUS_RATIO
+    if (dist < innerR || dist > radius) return
+    const angle = Math.atan2(dy, dx)
+    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    onDropArchive(blockId, minute, (minute + 60) % MINUTES_IN_DAY)
+  }, [onDropArchive])
+
   const getCursorStyle = () => {
     if (placement) return placementStart != null ? 'grabbing' : 'crosshair'
     if (ghost) return 'grabbing'
-    return 'grab'
+    return dragOver ? 'copy' : 'grab'
   }
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative', width: '100%', maxWidth: size, margin: '0 auto' }}>
+    <div
+      ref={wrapperRef}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: size,
+        margin: '0 auto',
+        outline: dragOver ? '3px dashed var(--clr-primary)' : 'none',
+        outlineOffset: 8,
+        borderRadius: '50%',
+        transition: 'outline 0.15s ease',
+      }}
+    >
       <div className="sr-only" aria-live="polite">
         {displayBlocks.length > 0
           ? `Current time: ${minutesToStr(currentTime)}. ${displayBlocks.length} block${displayBlocks.length !== 1 ? 's' : ''} scheduled.`

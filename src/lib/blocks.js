@@ -160,6 +160,18 @@ export async function restoreBlockToDate(supabase, id, date) {
   })
 }
 
+export async function restoreBlockToTime(supabase, id, date, startMin, duration) {
+  if (!id) throw new Error('Block id required for restore')
+  return withRetry(async () => {
+    const { error } = await supabase
+      .from(TABLES.BLOCKS)
+      .update({ archived: false, date, start_min: startMin, duration })
+      .eq('id', id)
+
+    if (error) throw error
+  })
+}
+
 export async function fetchArchivedBlockById(supabase, userId, id) {
   if (!id) throw new Error('Block id required')
   return withRetry(async () => {

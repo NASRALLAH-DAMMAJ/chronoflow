@@ -29,7 +29,7 @@ function AppContent() {
   const navigate = useNavigate()
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
-  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, restoreBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, restoreBlock, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, goToDate, completeDay } = useStore()
   const toast = useToast()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
@@ -273,6 +273,7 @@ function AppContent() {
             onResizeBlockStart={resizeBlockStart}
             onSelectBlock={selectBlock}
             onPlaceBlock={handlePlaceOnDial}
+            onDropArchive={restoreDroppedBlock}
             size={380}
           />
         </div>

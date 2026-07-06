@@ -60,6 +60,12 @@ export default function ArchiveList({ onRestore }) {
     }
   }, [onRestore])
 
+  const handleDragStart = useCallback((e, block) => {
+    e.dataTransfer.setData('application/chrono-block-id', block.id)
+    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('text/plain', block.label)
+  }, [])
+
   if (blocks.length === 0 && !expanded) return null
 
   return (
@@ -96,6 +102,8 @@ export default function ArchiveList({ onRestore }) {
               return (
                 <div
                   key={block.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, block)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -104,6 +112,7 @@ export default function ArchiveList({ onRestore }) {
                     borderRadius: 6,
                     fontSize: 12,
                     opacity: 0.85,
+                    cursor: 'grab',
                   }}
                 >
                   <div style={{ width: 3, height: 24, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />

@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { blockReducer, initialState, loadCompletedDays, saveCompletedDays, computeStreak } from './reducer'
-import { getTodayStr } from './constants'
+import { getTodayStr, MINUTES_IN_DAY } from './constants'
 import { useSupabase } from '../lib/SupabaseContext'
-import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock, restoreBlockToDate, fetchArchivedBlockById } from '../lib/blocks'
+import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock, restoreBlockToDate, restoreBlockToTime, fetchArchivedBlockById } from '../lib/blocks'
 import { migrateLocalStorage } from '../lib/migrate'
 import { isAuthError } from '../lib/retry'
 import { taskQueue } from '../lib/taskQueue'
@@ -218,6 +218,28 @@ export function StoreProvider({ children }) {
     )
   }, [supabase, user])
 
+  const restoreDroppedBlock = useCallback(async (id, startMin, endMin) => {
+    const block = await fetchArchivedBlockById(supabase, user.id, id)
+    if (!block) return
+    const duration = endMin <= startMin
+      ? endMin + MINUTES_IN_DAY - startMin
+      : endMin - startMin
+    const restored = {
+      ...block,
+      archived: false,
+      date: stateRef.current.dateStr,
+      start: startMin,
+      end: endMin,
+    }
+    dispatch({ type: 'ADD_BLOCK', payload: restored })
+    taskQueue.add(
+      async () => {
+        await restoreBlockToTime(supabase, id, stateRef.current.dateStr, startMin, duration)
+      },
+      { label: 'Restoring block...', priority: 'normal', timeout: 10000 }
+    )
+  }, [supabase, user])
+
   const moveBlock = useCallback((id, newStart) => {
     dispatch({ type: 'MOVE_BLOCK', payload: { id, newStart } })
   }, [])
@@ -263,13 +285,14 @@ export function StoreProvider({ children }) {
     deleteBlock: deleteBlockAction,
     archiveBlock: archiveBlockAction,
     restoreBlock: restoreBlockAction,
+    restoreDroppedBlock,
     moveBlock,
     resizeBlock,
     resizeBlockStart,
     selectBlock,
     toggleLock,
     completeDay,
-  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, completeDay])
+  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, restoreBlockAction, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, completeDay])
 
   return (
     <StoreContext.Provider value={value}>
