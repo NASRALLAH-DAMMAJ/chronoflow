@@ -2,8 +2,13 @@ import React from 'react'
 import { useOffline } from '../hooks/useOffline'
 
 export default function OfflineBanner() {
-  const isOffline = useOffline()
-  if (!isOffline) return null
+  const { isOffline, slow } = useOffline()
+  if (!isOffline && !slow) return null
+
+  const bg = isOffline ? '#e8590c' : '#f59e0b'
+  const msg = isOffline
+    ? "You're offline — changes will sync when reconnected"
+    : 'Slow connection detected'
 
   return (
     <div
@@ -17,14 +22,14 @@ export default function OfflineBanner() {
         right: 0,
         zIndex: 9999,
         padding: '8px 16px',
-        backgroundColor: '#e8590c',
+        backgroundColor: bg,
         color: '#fff',
         textAlign: 'center',
         fontSize: 13,
         fontWeight: 600,
       }}
     >
-      You're offline — changes will sync when reconnected
+      {msg}
     </div>
   )
 }

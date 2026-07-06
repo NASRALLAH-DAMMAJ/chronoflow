@@ -14,6 +14,7 @@ import { minutesToStr, formatDateLabel, snapToGrid } from './utils'
 import { useSupabase } from './lib/SupabaseContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
+import NetworkIndicator from './components/NetworkIndicator'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
 import { useSwipe, haptic } from './hooks/useSwipe'
 import LoginPage from './pages/LoginPage'
@@ -168,6 +169,7 @@ function AppContent() {
           <h1 style={{ fontSize: 'var(--fs-headline)', fontWeight: 700, color: 'var(--clr-text)', margin: 0 }}>
             ChronoFlow
           </h1>
+          <NetworkIndicator />
           <span style={{ fontSize: 'var(--fs-small)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
             · {formatDateLabel(dateStr)}
           </span>

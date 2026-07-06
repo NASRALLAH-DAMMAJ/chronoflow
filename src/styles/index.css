@@ -280,11 +280,11 @@ button, a, input, select, textarea {
   }
 
   .app-grid > div:first-child {
-    order: 0;
+    order: -1;
   }
 
   .app-grid > div:last-child {
-    order: -1;
+    order: 0;
   }
 
   header {

@@ -72,7 +72,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             }}
           >
             <div style={{ width: 4, borderRadius: 2, backgroundColor: color, flexShrink: 0, marginRight: 10 }} />
-            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
+            <div style={{ flex: '1 1 0', minWidth: 80, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {block.label}
               </div>

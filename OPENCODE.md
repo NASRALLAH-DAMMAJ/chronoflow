@@ -29,13 +29,13 @@
 
 ### 5. When Starting a Session
 1. Read `ISSUES.md` for current open issues.
-2. Read `ROADMAP.md` for current phase and next tasks.
+2. Read `README_V2.md` for current phase and next tasks.
 3. Ask user what they want to work on.
 4. Create a todo list for the session.
 
 ### 6. When Finishing a Session
 1. Update `ISSUES.md` — mark completed issues `[x]`.
-2. Update `ROADMAP.md` — mark completed tasks as done.
+2. Update `README_V2.md` — mark completed tasks as done
 3. Commit any uncommitted changes (with user approval).
 4. Push to GitHub.
 5. Report what was done and what's next.

@@ -6,6 +6,7 @@ import { fetchBlocks, upsertBlocks, deleteBlock, archiveBlock } from '../lib/blo
 import { migrateLocalStorage } from '../lib/migrate'
 import { isAuthError } from '../lib/retry'
 import { taskQueue } from '../lib/taskQueue'
+import { seedBlocks, putBlocks, removeBlock, markBlockArchived, enqueueSyncAction, getBlocksByDate, blockToDbRecord } from '../lib/db'
 
 const StoreContext = createContext(null)
 
@@ -52,6 +53,7 @@ export function StoreProvider({ children }) {
         if (userIdRef.current !== currentUser) return
         const blocks = await fetchBlocks(supabase, today)
         if (userIdRef.current !== currentUser) return
+        seedBlocks(blocks.map(b => blockToDbRecord(b, today, user.id))).catch(() => {})
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
       } catch (err) {
         console.error('[Store] Init failed:', err)
@@ -78,11 +80,15 @@ export function StoreProvider({ children }) {
     while (saveQueueRef.current.length > 0) {
       const { dateStr, blocks, userId, resolve } = saveQueueRef.current.pop()
       try {
+        const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
+        putBlocks(records).catch(() => {})
         await upsertBlocks(supabase, dateStr, blocks, userId)
         setDbError(null)
         resolve()
       } catch (err) {
         console.error('[Store] Save failed:', err)
+        const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
+        enqueueSyncAction({ action: 'upsert', table: 'blocks', record_id: '', payload: { blocks: records } }).catch(() => {})
         if (isAuthError(err)) {
           setDbError('Session expired — please log in again')
         } else {
@@ -146,6 +152,12 @@ export function StoreProvider({ children }) {
     await flushSave()
     dispatch({ type: 'SET_DATE', payload: ds })
     const gen = ++genRef.current
+    getBlocksByDate(ds).then(localBlocks => {
+      if (gen !== genRef.current) return
+      if (localBlocks.length > 0) {
+        dispatch({ type: 'LOAD_BLOCKS', payload: localBlocks })
+      }
+    }).catch(() => {})
     taskQueue.add(
       async ({ onProgress }) => {
         onProgress(10)
@@ -153,6 +165,7 @@ export function StoreProvider({ children }) {
         onProgress(100)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
+        seedBlocks(blocks.map(b => blockToDbRecord(b, ds, user.id))).catch(() => {})
       },
       {
         label: 'Loading day...',
@@ -160,7 +173,7 @@ export function StoreProvider({ children }) {
         timeout: 15000,
       }
     )
-  }, [supabase, flushSave])
+  }, [supabase, user, flushSave])
 
   const addBlock = useCallback((block) => {
     dispatch({ type: 'ADD_BLOCK', payload: block })
@@ -172,6 +185,7 @@ export function StoreProvider({ children }) {
 
   const deleteBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
+    removeBlock(id).catch(() => {})
     taskQueue.add(
       async () => {
         await deleteBlock(supabase, id)
@@ -182,6 +196,7 @@ export function StoreProvider({ children }) {
 
   const archiveBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
+    markBlockArchived(id).catch(() => {})
     taskQueue.add(
       async () => {
         await archiveBlock(supabase, id)

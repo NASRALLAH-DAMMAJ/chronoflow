@@ -15,6 +15,11 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
   const now = currentTimeMinutes || 0
   const runningBlocks = findRunningBlocks(blocks, now)
 
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(cx, cy, centerR, 0, TAU)
+  ctx.clip()
+
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
@@ -57,16 +62,21 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
       ctx.fillRect(barX, barY, barW * (pct / 100), barH)
     }
   } else {
-    const slotH = 20
-    const startY = cy - (runningBlocks.length * slotH) / 2 + slotH / 2
+    const availH = centerR * 2 - 40
+    const slotH = Math.max(12, Math.min(20, Math.floor(availH / runningBlocks.length)))
+    const listH = runningBlocks.length * slotH
+    const startY = cy - listH / 2 + slotH / 2
 
     ctx.fillStyle = primary
     ctx.font = 'bold 14px Inter, sans-serif'
-    ctx.fillText(minutesToStr(now), cx, cy - runningBlocks.length * slotH / 2 - 14)
+    ctx.fillText(minutesToStr(now), cx, cy - listH / 2 - 14)
 
     ctx.font = '10px Inter, sans-serif'
     ctx.fillStyle = textSecondary
-    ctx.fillText(runningBlocks.length + ' tasks running', cx, cy - runningBlocks.length * slotH / 2 - 2)
+    ctx.fillText(runningBlocks.length + ' tasks running', cx, cy - listH / 2 - 2)
+
+    const labelMaxLen = slotH < 16 ? 6 : 10
+    const labelFontSize = slotH < 16 ? 9 : 11
 
     for (let i = 0; i < runningBlocks.length; i++) {
       const b = runningBlocks[i]
@@ -81,16 +91,19 @@ export function drawCenterInfo(ctx, cx, cy, innerR, blocks, currentTimeMinutes, 
       ctx.arc(cx - centerR + 16, y, 4, 0, TAU)
       ctx.fill()
 
-      const label = b.label.length > 10 ? b.label.slice(0, 9) + '…' : b.label
+      const label = b.label.length > labelMaxLen ? b.label.slice(0, labelMaxLen - 1) + '…' : b.label
       ctx.fillStyle = text
-      ctx.font = '11px Inter, sans-serif'
+      ctx.font = labelFontSize + 'px Inter, sans-serif'
       ctx.textAlign = 'left'
       ctx.fillText(label, cx - centerR + 26, y + 1)
 
       ctx.textAlign = 'right'
       ctx.fillStyle = textSecondary
+      ctx.font = labelFontSize + 'px Inter, sans-serif'
       ctx.fillText(remaining + 'm', cx + centerR - 10, y + 1)
       ctx.textAlign = 'center'
     }
   }
+
+  ctx.restore()
 }

@@ -1,7 +1,7 @@
 import { MINUTES_IN_DAY, TABLES, BLOCK_CATEGORIES } from '../store/constants'
 import { withRetry, isAuthError } from './retry'
 
-const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id'
+const DB_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,locked'
 
 export function validateBlockForDb(block) {
   if (!block) return 'Block is required'
@@ -148,7 +148,7 @@ export async function restoreBlock(supabase, id) {
   })
 }
 
-const ARCHIVED_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,archived'
+const ARCHIVED_FIELDS = 'id,date,start_min,duration,label,category,is_recurring,parent_rule_id,archived,locked'
 
 export function archivedBlockFromDb(row) {
   const end = row.start_min + row.duration
