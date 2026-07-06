@@ -146,6 +146,21 @@ export function StoreProvider({ children }) {
     while (saveQueueRef.current.length > 0) {
       const { dateStr, blocks, userId, resolve } = saveQueueRef.current.pop()
       try {
+        const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
+        storage.putBlocks(records).catch(() => {})
+        await enqueueForSync('upsert', dateStr, blocks)
+        setDbError(null)
+        resolve()
+      } catch (err) {
+        console.error('[Store] Save failed:', err)
+        await enqueueForSync('upsert', dateStr, blocks)
+        if (isAuthError(err)) {
+          setDbError('Session expired — please log in again')
+        } else {
+          setDbError('Save queued for retry: ' + (err.message || 'unknown error'))
+        }
+        resolve()
+      }
     }
     savingRef.current = false
   }, [supabase])
