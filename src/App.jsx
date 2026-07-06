@@ -113,8 +113,8 @@ function AppContent() {
       id: crypto.randomUUID(),
       start: start % MINUTES_IN_DAY,
       end,
-      label: placement.label,
-      category: placement.category,
+      label: placement ? placement.label : 'New',
+      category: placement ? placement.category : DEFAULT_CATEGORY,
       tags: [],
     })
     toast.success('Block added')
@@ -343,8 +343,6 @@ function AppContent() {
                 onContextMenu={setContextBlockId}
                 contextRef={contextRef}
                 onEditRule={() => navigate(ROUTES.RULES)}
-                onTimerStart={handleTimerStart}
-                activeTimerBlockId={activeTimerBlockId}
               />
             </div>
 

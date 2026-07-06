@@ -33,7 +33,7 @@ export function setupRealtimeSubscription(supabase, userId, onBlockChange) {
   let reconnectTimer = null
   const MAX_RECONNECT_DELAY = 30000
 
-  const channel = supabase.channel(`blocks:user_id=eq.${userId}`, {
+  const channel = supabase.channel('blocks-realtime', {
     selfBroadcast: true,
   })
 

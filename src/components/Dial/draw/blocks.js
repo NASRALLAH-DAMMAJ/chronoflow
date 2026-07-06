@@ -3,6 +3,18 @@ import { toRenderMinute, isVisible } from '../zoom-utils'
 import { renderMinuteToRadians, PI, TAU } from './utils'
 
 export function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zoomRange) {
+  const overlapGroup = new Map()
+
+  for (const block of blocks) {
+    if (block.overlapCount > 1 && block.overlapGroupIds) {
+      if (!overlapGroup.has(block.id)) {
+        const group = new Set(block.overlapGroupIds)
+        group.add(block.id)
+        overlapGroup.set(block.id, group)
+      }
+    }
+  }
+
   for (const block of blocks) {
     if (zoomRange) {
       const wraps = block.end <= block.start
@@ -20,11 +32,20 @@ export function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zo
     if (renderEnd <= renderStart) endAngle += TAU
 
     const isSelected = block.id === selectedId
-    const outerR = innerR + arcWidth
+    const isOverlapping = block.overlapCount > 1
+    const totalLanes = block.overlapCount || 1
+    const laneIndex = block.overlapIndex || 0
+
+    const laneArcWidth = isOverlapping ? arcWidth / totalLanes : arcWidth
+    const laneInnerR = innerR + laneArcWidth * laneIndex
+    const laneOuterR = laneInnerR + laneArcWidth
+    const laneArcGap = isOverlapping ? 2 : 0
+    const drawInnerR = laneInnerR + laneArcGap
+    const drawOuterR = laneOuterR - laneArcGap
 
     ctx.beginPath()
-    ctx.arc(cx, cy, outerR, startAngle, endAngle)
-    ctx.arc(cx, cy, innerR, endAngle, startAngle, true)
+    ctx.arc(cx, cy, drawOuterR, startAngle, endAngle)
+    ctx.arc(cx, cy, drawInnerR, endAngle, startAngle, true)
     ctx.closePath()
 
     ctx.fillStyle = block.color || CATEGORY_COLORS.work
@@ -41,7 +62,7 @@ export function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zo
     const duration = block.end <= block.start ? block.end + MINUTES_IN_DAY - block.start : block.end - block.start
     if (block.label && duration > 30) {
       const midAngle = (startAngle + endAngle) / 2
-      const midR = innerR + arcWidth / 2
+      const midR = (drawInnerR + drawOuterR) / 2
       const x = cx + Math.cos(midAngle) * midR
       const y = cy + Math.sin(midAngle) * midR
       ctx.save()
@@ -58,7 +79,8 @@ export function drawBlocks(ctx, cx, cy, innerR, arcWidth, blocks, selectedId, zo
         ? block.label.slice(0, 13) + '…'
         : block.label
       const lockIcon = block.locked ? ' 🔒' : ''
-      ctx.fillText(displayLabel + lockIcon + (block.is_recurring ? ' ↻' : ''), 0, 0)
+      const overlapBadge = isOverlapping ? ` [${laneIndex + 1}/${totalLanes}]` : ''
+      ctx.fillText(displayLabel + lockIcon + overlapBadge + (block.is_recurring ? ' ↻' : ''), 0, 0)
       ctx.restore()
     }
   }

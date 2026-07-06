@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { CATEGORY_COLORS, MINUTES_IN_DAY } from '../store/constants'
 import { IconClock } from '../design-system/icons'
-import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical, ArrowUp } from 'lucide-react'
+import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical, ArrowUp, AlertTriangle } from 'lucide-react'
 import { minutesToStr, formatDuration } from '../utils'
 
 const iconBtn = {
@@ -27,6 +27,44 @@ const iconBtnPressed = {
   backgroundColor: 'var(--clr-bg-secondary)',
 }
 
+const LANE_TINTS = [
+  'rgba(255,255,255,0)',
+  'rgba(59,130,246,0.04)',
+  'rgba(239,68,68,0.04)',
+  'rgba(34,197,94,0.04)',
+  'rgba(234,179,8,0.04)',
+  'rgba(168,85,247,0.04)',
+]
+
+function groupBlocks(blocks) {
+  const groups = []
+  let i = 0
+  while (i < blocks.length) {
+    const block = blocks[i]
+    if (block.overlapCount <= 1) {
+      groups.push({ type: 'single', block })
+      i++
+    } else {
+      const memberIds = new Set(block.overlapGroupIds)
+      memberIds.add(block.id)
+      const group = [block]
+      i++
+      while (i < blocks.length) {
+        const next = blocks[i]
+        if (next.overlapCount > 1 && next.overlapGroupIds.some(id => memberIds.has(id))) {
+          group.push(next)
+          next.overlapGroupIds.forEach(id => memberIds.add(id))
+          i++
+        } else {
+          break
+        }
+      }
+      groups.push({ type: 'group', blocks: group })
+    }
+  }
+  return groups
+}
+
 function SkeletonCard() {
   return (
     <div
@@ -48,7 +86,7 @@ function SkeletonCard() {
   )
 }
 
-function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDeleteBlock, onArchiveBlock, onToggleLock, onContextMenu, contextBlockId, contextRef, onEditRule, style }) {
+function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDeleteBlock, onArchiveBlock, onToggleLock, onContextMenu, contextBlockId, contextRef, onEditRule, style, inGroup }) {
   const color = CATEGORY_COLORS[block.category] || CATEGORY_COLORS.other
   const dur = block.end <= block.start
     ? block.end + MINUTES_IN_DAY - block.start
@@ -60,6 +98,8 @@ function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDel
     ...(pressedBtn === btnId ? iconBtnPressed : {}),
   }), [pressedBtn])
 
+  const showOverlap = block.overlapCount > 1
+
   return (
     <div
       key={block.id}
@@ -69,24 +109,49 @@ function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDel
       tabIndex={0}
       role="button"
       aria-pressed={isSelected}
-      aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}`}
+      aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}${showOverlap ? `, overlaps with ${block.overlapCount} blocks` : ''}`}
       style={{
-        contain: 'content',
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 52px',
+        contain: inGroup ? undefined : 'content',
+        contentVisibility: inGroup ? undefined : 'auto',
+        containIntrinsicSize: inGroup ? undefined : 'auto 52px',
         ...style,
+        position: 'relative',
         display: 'flex',
         alignItems: 'stretch',
         gap: 0,
-        padding: '10px 10px',
+        padding: showOverlap ? '10px 10px 10px 10px' : '10px 10px',
         borderRadius: 8,
-        backgroundColor: isSelected ? 'var(--clr-bg-secondary)' : 'transparent',
-        border: `2px solid ${isSelected ? color : 'transparent'}`,
+        backgroundColor: isSelected ? 'var(--clr-bg-secondary)' : (inGroup ? LANE_TINTS[block.overlapIndex % LANE_TINTS.length] : 'transparent'),
+        border: `2px solid ${isSelected ? color : showOverlap ? `${color}44` : 'transparent'}`,
         cursor: 'pointer',
         userSelect: 'none',
         transition: 'all 0.15s ease',
       }}
     >
+      {showOverlap && (
+        <div
+          title={`Overlaps with ${block.overlapCount} block${block.overlapCount > 1 ? 's' : ''}`}
+          style={{
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            backgroundColor: color,
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            zIndex: 2,
+          }}
+        >
+          {block.overlapCount}
+        </div>
+      )}
       <div style={{ width: 4, borderRadius: 2, backgroundColor: color, flexShrink: 0, marginRight: 10 }} />
       <div style={{ flex: '1 1 0', minWidth: 80, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, overflow: 'hidden' }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -234,6 +299,8 @@ function BlockCard({ block, isSelected, index, onSelectBlock, onEditBlock, onDel
   )
 }
 
+const flatIndex = (sorted, blockId) => sorted.findIndex(b => b.id === blockId)
+
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
   const scrollRef = useRef(null)
   const [isScrolling, setIsScrolling] = useState(false)
@@ -241,6 +308,8 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
   const [focusedIndex, setFocusedIndex] = useState(-1)
 
   const sorted = useMemo(() => [...blocks].sort((a, b) => a.start - b.start), [blocks])
+
+  const renderGroups = useMemo(() => groupBlocks(sorted), [sorted])
 
   const handleScroll = useCallback(() => {
     setIsScrolling(true)
@@ -263,7 +332,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
   const handleKeyDown = useCallback((e) => {
     if (sorted.length === 0) return
 
-    const currentIndex = focusedIndex >= 0 ? focusedIndex : sorted.findIndex(b => b.id === selectedId)
+    const currentIndex = focusedIndex >= 0 ? focusedIndex : flatIndex(sorted, selectedId)
 
     switch (e.key) {
       case 'ArrowDown': {
@@ -365,40 +434,101 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        {sorted.map((block, index) => {
-          const isSelected = block.id === selectedId
-          const isFocused = index === focusedIndex
+        {renderGroups.map((item, groupIdx) => {
+          if (item.type === 'single') {
+            const block = item.block
+            const idx = flatIndex(sorted, block.id)
+            const isSelected = block.id === selectedId
+            const isFocused = idx === focusedIndex
+            return (
+              <div
+                key={block.id}
+                role="option"
+                aria-selected={isSelected}
+                aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}`}
+                style={{
+                  contain: 'content',
+                  contentVisibility: 'auto',
+                  containIntrinsicSize: 'auto 52px',
+                }}
+              >
+                <BlockCard
+                  block={block}
+                  isSelected={isSelected}
+                  index={idx}
+                  onSelectBlock={onSelectBlock}
+                  onEditBlock={onEditBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  onArchiveBlock={onArchiveBlock}
+                  onToggleLock={onToggleLock}
+                  onContextMenu={onContextMenu}
+                  contextBlockId={contextBlockId}
+                  contextRef={contextRef}
+                  onEditRule={onEditRule}
+                  style={{
+                    animation: isFocused ? 'none' : undefined,
+                    outline: isFocused ? '2px solid var(--clr-focus)' : undefined,
+                    outlineOffset: isFocused ? '2px' : undefined,
+                  }}
+                />
+              </div>
+            )
+          }
+
+          const gap = 4
+          const count = item.blocks.length
+          const totalLanes = item.blocks[0].overlapCount
           return (
             <div
-              key={block.id}
-              role="option"
-              aria-selected={isSelected}
-              aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}`}
+              key={`group-${groupIdx}`}
+              role="group"
+              aria-label="Overlapping time blocks"
               style={{
-                contain: 'content',
-                contentVisibility: 'auto',
-                containIntrinsicSize: 'auto 52px',
+                display: 'flex',
+                flexDirection: 'row',
+                gap,
+                position: 'relative',
               }}
             >
-              <BlockCard
-                block={block}
-                isSelected={isSelected}
-                index={index}
-                onSelectBlock={onSelectBlock}
-                onEditBlock={onEditBlock}
-                onDeleteBlock={onDeleteBlock}
-                onArchiveBlock={onArchiveBlock}
-                onToggleLock={onToggleLock}
-                onContextMenu={onContextMenu}
-                contextBlockId={contextBlockId}
-                contextRef={contextRef}
-                onEditRule={onEditRule}
-                style={{
-                  animation: isFocused ? 'none' : undefined,
-                  outline: isFocused ? '2px solid var(--clr-focus)' : undefined,
-                  outlineOffset: isFocused ? '2px' : undefined,
-                }}
-              />
+              {item.blocks.map(block => {
+                const idx = flatIndex(sorted, block.id)
+                const isSelected = block.id === selectedId
+                const isFocused = idx === focusedIndex
+                const laneCount = block.overlapCount || totalLanes
+                return (
+                  <div
+                    key={block.id}
+                    role="option"
+                    aria-selected={isSelected}
+                    aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}, lane ${block.overlapIndex + 1} of ${laneCount}`}
+                    style={{
+                      flex: `0 0 calc((100% - ${(laneCount - 1) * gap}px) / ${laneCount})`,
+                      order: block.overlapIndex,
+                    }}
+                  >
+                    <BlockCard
+                      block={block}
+                      isSelected={isSelected}
+                      index={idx}
+                      onSelectBlock={onSelectBlock}
+                      onEditBlock={onEditBlock}
+                      onDeleteBlock={onDeleteBlock}
+                      onArchiveBlock={onArchiveBlock}
+                      onToggleLock={onToggleLock}
+                      onContextMenu={onContextMenu}
+                      contextBlockId={contextBlockId}
+                      contextRef={contextRef}
+                      onEditRule={onEditRule}
+                      inGroup
+                      style={{
+                        animation: isFocused ? 'none' : undefined,
+                        outline: isFocused ? '2px solid var(--clr-focus)' : undefined,
+                        outlineOffset: isFocused ? '2px' : undefined,
+                      }}
+                    />
+                  </div>
+                )
+              })}
             </div>
           )
         })}

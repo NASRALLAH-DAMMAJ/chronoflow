@@ -83,11 +83,19 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     disabled: !!placement,
   })
 
+  const handleDialTapAdd = useCallback((startMin, endMin) => {
+    onPlaceBlock(startMin, endMin)
+  }, [onPlaceBlock])
+
+  const handleBlockLongPress = useCallback((block) => {
+    onSelectBlock(block.id)
+  }, [onSelectBlock])
+
   const gestureHandlers = useDialGesture({
     blocks: blocksWithColor,
     onSelectBlock,
-    onAddBlock: onDialTapAdd,
-    onLongPressBlock: onBlockLongPress,
+    onAddBlock: handleDialTapAdd,
+    onLongPressBlock: handleBlockLongPress,
     zoomRange,
     containerRef: wrapperRef,
     disabled: !!placement,

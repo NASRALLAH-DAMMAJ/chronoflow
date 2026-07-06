@@ -1,0 +1,4 @@
+# ChronoFlow — personal time tracking app
+# Prevent indexing of private user data
+User-agent: *
+Disallow: /

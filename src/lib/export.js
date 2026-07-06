@@ -44,6 +44,33 @@ export async function exportToCSV(supabase, userId, dateFrom, dateTo) {
   downloadBlob(blob, `chronoflow-blocks-${dateFrom || 'all'}-${dateTo || 'all'}.csv`)
 }
 
+function isValidBlock(block, index) {
+  if (!block || typeof block !== 'object') return `Block at index ${index}: not an object`
+  if (!block.id || typeof block.id !== 'string') return `Block at index ${index}: missing or invalid 'id'`
+  if (!block.date || typeof block.date !== 'string') return `Block at index ${index}: missing or invalid 'date'`
+  if (block.start_min !== undefined && (typeof block.start_min !== 'number' || block.start_min < 0 || block.start_min > 1439)) return `Block at index ${index}: invalid 'start_min'`
+  if (block.duration !== undefined && (typeof block.duration !== 'number' || block.duration <= 0)) return `Block at index ${index}: invalid 'duration'`
+  if (block.label !== undefined && typeof block.label !== 'string') return `Block at index ${index}: invalid 'label'`
+  if (block.category !== undefined && typeof block.category !== 'string') return `Block at index ${index}: invalid 'category'`
+  return null
+}
+
+function isValidRule(rule, index) {
+  if (!rule || typeof rule !== 'object') return `Rule at index ${index}: not an object`
+  if (!rule.id || typeof rule.id !== 'string') return `Rule at index ${index}: missing or invalid 'id'`
+  if (rule.duration !== undefined && (typeof rule.duration !== 'number' || rule.duration <= 0)) return `Rule at index ${index}: invalid 'duration'`
+  if (rule.label !== undefined && typeof rule.label !== 'string') return `Rule at index ${index}: invalid 'label'`
+  return null
+}
+
+function isValidSettings(settings) {
+  if (!settings || typeof settings !== 'object') return 'Settings: not an object'
+  if (settings.sleep_start !== undefined && typeof settings.sleep_start !== 'number') return 'Settings: invalid sleep_start'
+  if (settings.sleep_end !== undefined && typeof settings.sleep_end !== 'number') return 'Settings: invalid sleep_end'
+  if (settings.theme !== undefined && !['light', 'dark', 'system'].includes(settings.theme)) return 'Settings: invalid theme'
+  return null
+}
+
 export async function importFromJSON(supabase, userId, file) {
   const text = await file.text()
   let data
@@ -53,8 +80,37 @@ export async function importFromJSON(supabase, userId, file) {
     throw new Error('Invalid JSON file')
   }
 
-  if (!data.version || !data.blocks) {
-    throw new Error('Invalid ChronoFlow export file')
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid ChronoFlow export file: expected a JSON object')
+  }
+
+  if (typeof data.version !== 'number' || data.version < 1) {
+    throw new Error('Invalid ChronoFlow export file: missing or invalid version')
+  }
+
+  if (!Array.isArray(data.blocks)) {
+    throw new Error('Invalid ChronoFlow export file: blocks must be an array')
+  }
+
+  // Validate all blocks before processing
+  for (let i = 0; i < data.blocks.length; i++) {
+    const err = isValidBlock(data.blocks[i], i)
+    if (err) throw new Error(`Invalid ChronoFlow export file: ${err}`)
+  }
+
+  // Validate rules if present
+  if (data.recurringRules !== undefined) {
+    if (!Array.isArray(data.recurringRules)) throw new Error('Invalid ChronoFlow export file: recurringRules must be an array')
+    for (let i = 0; i < data.recurringRules.length; i++) {
+      const err = isValidRule(data.recurringRules[i], i)
+      if (err) throw new Error(`Invalid ChronoFlow export file: ${err}`)
+    }
+  }
+
+  // Validate settings if present
+  if (data.settings !== undefined) {
+    const err = isValidSettings(data.settings)
+    if (err) throw new Error(`Invalid ChronoFlow export file: ${err}`)
   }
 
   const results = { blocks: 0, rules: 0, settings: false, errors: [] }

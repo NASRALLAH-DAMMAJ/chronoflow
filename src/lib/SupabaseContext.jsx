@@ -13,14 +13,18 @@ export function SupabaseProvider({ children }) {
     const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
 
     if (hashParams.has('access_token')) {
+      // Strip tokens from URL immediately to prevent referrer leakage
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      window.history.replaceState(null, '', window.location.pathname)
+
       supabase.auth.setSession({
-        access_token: hashParams.get('access_token'),
-        refresh_token: hashParams.get('refresh_token'),
+        access_token: accessToken,
+        refresh_token: refreshToken,
       }).then(({ data: { session }, error }) => {
         if (!error && session) {
           setSession(session)
           setUser(session.user)
-          window.history.replaceState(null, '', window.location.pathname)
         }
         setLoading(false)
       }).catch(() => setLoading(false))

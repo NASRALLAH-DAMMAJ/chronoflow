@@ -1,6 +1,6 @@
 const { createServer } = require('http')
 const { readFileSync, existsSync, statSync } = require('fs')
-const { join, extname } = require('path')
+const { join, extname, resolve } = require('path')
 const { createGzip } = require('zlib')
 
 const PORT = process.env.PORT || 5173
@@ -36,6 +36,8 @@ const SECURITY_HEADERS = {
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
 }
 
 const rateLimitMap = new Map()
@@ -95,12 +97,18 @@ const server = createServer((req, res) => {
   }
 
   let url = req.url.split('?')[0]
-  if (url.includes('..')) {
+
+  // Prevent path traversal by resolving and verifying the path is within dist
+  // Strip leading slash so join treats it as relative (otherwise it becomes absolute)
+  const relativePath = url === '/' ? 'index.html' : url.replace(/^\//, '')
+  const requestedPath = join(dist, relativePath)
+  const resolvedPath = resolve(requestedPath)
+  if (!resolvedPath.startsWith(dist + '/')) {
     sendError(res, 403, 'Forbidden')
     return
   }
 
-  let filePath = join(dist, url === '/' ? 'index.html' : url)
+  let filePath = resolvedPath
 
   if (!existsSync(filePath) || !statSync(filePath).isFile()) {
     filePath = join(dist, 'index.html')

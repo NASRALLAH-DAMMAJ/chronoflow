@@ -66,9 +66,11 @@ export default class ErrorBoundary extends React.Component {
               : `${name} failed to load. Your data is safe.`
             }
           </div>
-          <div style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', marginBottom: 12, fontFamily: 'monospace' }}>
-            {error?.message || 'Unknown error'}
-          </div>
+          {import.meta.env.DEV && (
+            <div style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', marginBottom: 12, fontFamily: 'monospace' }}>
+              {error?.message || 'Unknown error'}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             {canRetry && (
               <button
