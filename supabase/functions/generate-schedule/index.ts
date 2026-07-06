@@ -40,6 +40,7 @@ interface BlockOutput {
   category: string;
   is_recurring: boolean;
   parent_rule_id: string | null;
+  locked: boolean;
 }
 
 export default {
@@ -107,7 +108,7 @@ export default {
 
     const existingBlocks = (explicitBlocks as ExplicitBlock[]) || [];
 
-    // Collect all blocks: start with non-recurring explicit blocks (exclude sleep — always generated fresh)
+    // Collect all blocks: start with non-recurring explicit blocks (exclude sleep — handled separately)
     const resultBlocks: BlockOutput[] = existingBlocks
       .filter((b) => !b.is_recurring && b.category !== "sleep")
       .map((b) => ({
@@ -162,8 +163,9 @@ export default {
       }
     }
 
-    // Add sleep block
-    const sleepBlockId = crypto.randomUUID();
+    // Add/update sleep block (reuse existing ID to avoid duplicates)
+    const existingSleepBlock = existingBlocks.find((b) => b.category === "sleep");
+    const sleepBlockId = existingSleepBlock?.id ?? crypto.randomUUID();
     let sleepStartMin = sleepStart;
     let sleepDuration: number;
 
@@ -184,6 +186,7 @@ export default {
       category: "sleep",
       is_recurring: false,
       parent_rule_id: null,
+      locked: true,
     });
 
     return Response.json({ blocks: resultBlocks });

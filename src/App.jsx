@@ -29,7 +29,7 @@ function AppContent() {
   const navigate = useNavigate()
   const { isDark, toggle } = useDarkMode()
   const { supabase } = useSupabase()
-  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, addBlock, updateBlock, deleteBlock, archiveBlock, restoreBlock, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, goToDate, completeDay } = useStore()
+  const { blocks, dateStr, selectedId, completedDays, loading, streak, dbError, archiveVersion, addBlock, updateBlock, deleteBlock, deleteArchivedBlock, archiveBlock, restoreBlock, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, goToDate, completeDay } = useStore()
   const toast = useToast()
   const [showForm, setShowForm] = useState(false)
   const [editingBlock, setEditingBlock] = useState(null)
@@ -286,7 +286,7 @@ function AppContent() {
               </div>
             )}
 
-            <ArchiveList onRestore={restoreBlock} />
+            <ArchiveList onRestore={restoreBlock} onDelete={deleteArchivedBlock} archiveVersion={archiveVersion} />
             <div aria-live="polite" aria-label="Time blocks">
               <BlockList
                 blocks={blocks}

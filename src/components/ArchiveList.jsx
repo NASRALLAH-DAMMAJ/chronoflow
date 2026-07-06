@@ -3,7 +3,7 @@ import { useSupabase } from '../lib/SupabaseContext'
 import { fetchArchivedBlocks } from '../lib/blocks'
 import { CATEGORY_COLORS } from '../store/constants'
 import { minutesToStr } from '../utils'
-import { ChevronDown, ChevronUp, RotateCcw } from 'lucide-react'
+import { ChevronDown, ChevronUp, RotateCcw, Trash2 } from 'lucide-react'
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -31,7 +31,7 @@ const iconBtn = {
   flexShrink: 0,
 }
 
-export default function ArchiveList({ onRestore }) {
+export default function ArchiveList({ onRestore, onDelete, archiveVersion }) {
   const { supabase, user } = useSupabase()
   const [expanded, setExpanded] = useState(false)
   const [blocks, setBlocks] = useState([])
@@ -39,11 +39,11 @@ export default function ArchiveList({ onRestore }) {
   const [hasArchived, setHasArchived] = useState(null)
 
   useEffect(() => {
-    if (!user || hasArchived !== null) return
+    if (!user) return
     fetchArchivedBlocks(supabase, user.id, { limit: 1 }).then(data => {
       setHasArchived(data.length > 0)
     }).catch(() => setHasArchived(false))
-  }, [supabase, user, hasArchived])
+  }, [supabase, user, archiveVersion]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async () => {
     if (!user || !expanded) return
@@ -59,6 +59,7 @@ export default function ArchiveList({ onRestore }) {
   }, [supabase, user, expanded])
 
   useEffect(() => { if (expanded) load() }, [expanded, load])
+  useEffect(() => { if (expanded && archiveVersion > 0) load() }, [archiveVersion]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRestore = useCallback(async (block) => {
     try {
@@ -72,6 +73,20 @@ export default function ArchiveList({ onRestore }) {
       console.error('Failed to restore block:', e)
     }
   }, [onRestore])
+
+  const handleDelete = useCallback(async (block) => {
+    if (!window.confirm(`Delete "${block.label}" from archive permanently?`)) return
+    try {
+      await onDelete(block.id)
+      setBlocks(prev => {
+        const next = prev.filter(b => b.id !== block.id)
+        if (next.length === 0) setHasArchived(false)
+        return next
+      })
+    } catch (e) {
+      console.error('Failed to delete archived block:', e)
+    }
+  }, [onDelete])
 
   const handleDragStart = useCallback((e, block) => {
     e.dataTransfer.setData('application/chrono-block-id', block.id)
@@ -142,6 +157,14 @@ export default function ArchiveList({ onRestore }) {
                     title="Restore to today"
                   >
                     <RotateCcw size={12} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(block) }}
+                    aria-label={`Delete ${block.label}`}
+                    style={{ ...iconBtn, color: 'var(--clr-danger, #ef4444)' }}
+                    title="Delete permanently"
+                  >
+                    <Trash2 size={12} />
                   </button>
                 </div>
               )

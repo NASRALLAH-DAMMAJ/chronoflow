@@ -2,11 +2,20 @@ import { MINUTES_IN_DAY } from '../../../store/constants'
 import { toRenderMinute } from '../zoom-utils'
 import { renderMinuteToRadians } from './utils'
 
-export function drawHourTicks(ctx, cx, cy, outerR, innerR, color, borderColor, zoomRange) {
+function formatHour(hour, timeFormat) {
+  if (timeFormat === '12h') {
+    if (hour === 0 || hour === 24) return '12'
+    if (hour <= 12) return String(hour)
+    return String(hour - 12)
+  }
+  return hour === 0 || hour === 24 ? '24' : String(hour)
+}
+
+export function drawHourTicks(ctx, cx, cy, outerR, innerR, color, borderColor, zoomRange, majorInterval = 180) {
   if (!zoomRange) {
     for (let h = 0; h < 24; h++) {
       const angle = renderMinuteToRadians(h * 60)
-      const isMajor = h % 3 === 0
+      const isMajor = h % (majorInterval / 60) === 0
       const outer = outerR - (isMajor ? 6 : 3)
       const inner = innerR + (isMajor ? 6 : 3)
       ctx.beginPath()
@@ -20,11 +29,11 @@ export function drawHourTicks(ctx, cx, cy, outerR, innerR, color, borderColor, z
   }
 
   const { start, end } = zoomRange
-  const range = end - start
+  const range = end > start ? end - start : MINUTES_IN_DAY - start + end
   const tickInterval = range > 480 ? 60 : range > 120 ? 30 : 15
 
   for (let m = 0; m <= range; m += tickInterval) {
-    const worldMin = start + m
+    const worldMin = (start + m) % MINUTES_IN_DAY
     const rm = toRenderMinute(worldMin, zoomRange)
     const angle = renderMinuteToRadians(rm)
     const isMajor = m % (tickInterval * (range > 480 ? 1 : range > 240 ? 2 : 4)) === 0
@@ -39,37 +48,39 @@ export function drawHourTicks(ctx, cx, cy, outerR, innerR, color, borderColor, z
   }
 }
 
-export function drawHourLabels(ctx, cx, cy, innerR, color, zoomRange) {
+export function drawHourLabels(ctx, cx, cy, outerR, color, zoomRange, labelInterval = 180, timeFormat = '24h') {
+  if (!labelInterval) return
+
   ctx.fillStyle = color
-  ctx.font = '11px Inter, sans-serif'
+  ctx.font = 'bold 12px Inter, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
+  const labelR = outerR + 16
+
   if (!zoomRange) {
-    for (let h = 0; h < 24; h++) {
-      if (h % 3 !== 0) continue
+    for (let h = 0; h < 24; h += labelInterval / 60) {
       const angle = renderMinuteToRadians(h * 60)
-      const labelR = innerR - 18
       const x = cx + Math.cos(angle) * labelR
       const y = cy + Math.sin(angle) * labelR
-      ctx.fillText(h === 0 ? '24' : String(h), x, y)
+      ctx.fillText(formatHour(h, timeFormat), x, y)
     }
     return
   }
 
   const { start, end } = zoomRange
-  const range = end - start
-  const labelInterval = range > 480 ? 120 : range > 240 ? 60 : range > 120 ? 30 : 15
+  const range = end > start ? end - start : MINUTES_IN_DAY - start + end
+  const autoInterval = range > 480 ? 120 : range > 240 ? 60 : range > 120 ? 30 : 15
+  const interval = Math.min(autoInterval, labelInterval)
 
-  for (let m = 0; m <= range; m += labelInterval) {
+  for (let m = 0; m <= range; m += interval) {
     const worldMin = (start + m) % MINUTES_IN_DAY
     const rm = toRenderMinute(worldMin, zoomRange)
     const angle = renderMinuteToRadians(rm)
-    const labelR = innerR - 18
     const x = cx + Math.cos(angle) * labelR
     const y = cy + Math.sin(angle) * labelR
     const h = Math.floor(worldMin / 60)
     const min = worldMin % 60
-    ctx.fillText(min === 0 ? String(h) : `${h}:${String(min).padStart(2, '0')}`, x, y)
+    ctx.fillText(min === 0 ? formatHour(h, timeFormat) : `${formatHour(h, timeFormat)}:${String(min).padStart(2, '0')}`, x, y)
   }
 }

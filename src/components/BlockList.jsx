@@ -72,22 +72,22 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             }}
           >
             <div style={{ width: 4, borderRadius: 2, backgroundColor: color, flexShrink: 0, marginRight: 10 }} />
-            <div style={{ flex: '1 1 0', minWidth: 80, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2 }}>
+            <div style={{ flex: '1 1 0', minWidth: 80, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, overflow: 'hidden' }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {block.label}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap', overflow: 'hidden' }}>
                 <span style={{ fontSize: 12, color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
                   {minutesToStr(block.start)} – {minutesToStr(block.end)}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)' }}>
+                <span style={{ fontSize: 11, color: 'var(--clr-text-tertiary)', flexShrink: 0 }}>
                   {formatDuration(dur)}
                 </span>
-                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, backgroundColor: 'var(--clr-bg-secondary)', color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                   {block.category}
                 </span>
                 {block.is_recurring && (
-                  <span style={{ fontSize: 10, color: 'var(--clr-text-tertiary)' }}>↻</span>
+                  <span style={{ fontSize: 10, color: 'var(--clr-text-tertiary)', flexShrink: 0 }}>↻</span>
                 )}
               </div>
             </div>
@@ -140,7 +140,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               <button
                 onClick={e => { e.stopPropagation(); onToggleLock && onToggleLock(block.id) }}
                 aria-label={block.locked ? `Unlock ${block.label}` : `Lock ${block.label}`}
-                style={{ ...iconBtn, color: block.locked ? '#D97706' : undefined }}
+                style={{ ...iconBtn, color: block.locked ? '#D97706' : 'var(--clr-text-secondary)' }}
               >
                 {block.locked ? <Unlock size={13} /> : <Lock size={13} />}
               </button>

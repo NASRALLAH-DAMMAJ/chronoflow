@@ -34,6 +34,8 @@ export function StoreProvider({ children }) {
   const stateRef = useRef(state)
   stateRef.current = state
   const [dbError, setDbError] = useState(null)
+  const [archiveVersion, setArchiveVersion] = useState(0)
+  const bumpArchiveVersion = useCallback(() => setArchiveVersion(v => v + 1), [])
 
   useEffect(() => {
     if (!user || initFetched.current) return
@@ -52,6 +54,17 @@ export function StoreProvider({ children }) {
           console.error('[Store] migrateLocalStorage failed:', err)
         })
         if (userIdRef.current !== currentUser) return
+
+        // Show cached data immediately
+        getBlocksByDate(today).then(localBlocks => {
+          if (userIdRef.current !== currentUser) return
+          if (localBlocks.length > 0) {
+            dispatch({ type: 'LOAD_BLOCKS', payload: localBlocks })
+            dispatch({ type: 'SET_LOADING', payload: false })
+          }
+        }).catch(() => {})
+
+        // Fetch fresh data from server
         const blocks = await fetchSchedule(supabase, today).catch(() => fetchBlocks(supabase, today))
         if (userIdRef.current !== currentUser) return
         seedBlocks(blocks.map(b => blockToDbRecord(b, today, user.id))).catch(() => {})
@@ -115,11 +128,15 @@ export function StoreProvider({ children }) {
       saveTimerRef.current = null
     }
     const s = stateRef.current
-    if (s.loaded && user && supabase) {
-      return saveToDb(s.dateStr, s.blocks)
+    if (s.loaded && user && supabase && s.dateStr) {
+      const records = s.blocks.map(b => blockToDbRecord(b, s.dateStr, user.id))
+      putBlocks(records).catch(() => {})
+      return upsertBlocks(supabase, s.dateStr, s.blocks, user.id).catch(err => {
+        console.error('[Store] flushSave failed:', err)
+      })
     }
     return Promise.resolve()
-  }, [user, supabase, saveToDb])
+  }, [user, supabase])
 
   useEffect(() => {
     return () => {
@@ -139,7 +156,7 @@ export function StoreProvider({ children }) {
     saveTimerRef.current = setTimeout(() => {
       saveToDb(state.dateStr, state.blocks)
       saveTimerRef.current = null
-    }, 0)
+    }, 1000)
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current)
@@ -159,10 +176,13 @@ export function StoreProvider({ children }) {
         dispatch({ type: 'LOAD_BLOCKS', payload: localBlocks })
       }
     }).catch(() => {})
+    const isFuture = ds >= getTodayStr()
     taskQueue.add(
       async ({ onProgress }) => {
         onProgress(10)
-        const blocks = await fetchSchedule(supabase, ds).catch(() => fetchBlocks(supabase, ds))
+        const blocks = isFuture
+          ? await fetchSchedule(supabase, ds).catch(() => fetchBlocks(supabase, ds))
+          : await fetchBlocks(supabase, ds)
         onProgress(100)
         if (gen !== genRef.current) return
         dispatch({ type: 'LOAD_BLOCKS', payload: blocks })
@@ -195,16 +215,28 @@ export function StoreProvider({ children }) {
     )
   }, [supabase])
 
+  const deleteArchivedBlock = useCallback((id) => {
+    removeBlock(id).catch(() => {})
+    taskQueue.add(
+      async () => {
+        await deleteBlock(supabase, id)
+        bumpArchiveVersion()
+      },
+      { label: 'Deleting archived block...', priority: 'normal', timeout: 10000 }
+    )
+  }, [supabase, bumpArchiveVersion])
+
   const archiveBlockAction = useCallback((id) => {
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
     markBlockArchived(id).catch(() => {})
     taskQueue.add(
       async () => {
         await archiveBlock(supabase, id)
+        bumpArchiveVersion()
       },
       { label: 'Archiving block...', priority: 'normal', timeout: 10000 }
     )
-  }, [supabase])
+  }, [supabase, bumpArchiveVersion])
 
   const restoreBlockAction = useCallback(async (id) => {
     const block = await fetchArchivedBlockById(supabase, user.id, id)
@@ -214,32 +246,36 @@ export function StoreProvider({ children }) {
     taskQueue.add(
       async () => {
         await restoreBlockToDate(supabase, id, stateRef.current.dateStr)
+        bumpArchiveVersion()
       },
       { label: 'Restoring block...', priority: 'normal', timeout: 10000 }
     )
-  }, [supabase, user])
+  }, [supabase, user, bumpArchiveVersion])
 
-  const restoreDroppedBlock = useCallback(async (id, startMin, endMin) => {
+  const restoreDroppedBlock = useCallback(async (id, startMin) => {
     const block = await fetchArchivedBlockById(supabase, user.id, id)
     if (!block) return
-    const duration = endMin <= startMin
-      ? endMin + MINUTES_IN_DAY - startMin
-      : endMin - startMin
+    const originalDuration = block.end <= block.start
+      ? block.end + MINUTES_IN_DAY - block.start
+      : block.end - block.start
+    const newEnd = startMin + originalDuration
+    const end = newEnd > MINUTES_IN_DAY ? newEnd - MINUTES_IN_DAY : newEnd === MINUTES_IN_DAY ? MINUTES_IN_DAY : newEnd
     const restored = {
       ...block,
       archived: false,
       date: stateRef.current.dateStr,
       start: startMin,
-      end: endMin,
+      end,
     }
     dispatch({ type: 'ADD_BLOCK', payload: restored })
     taskQueue.add(
       async () => {
-        await restoreBlockToTime(supabase, id, stateRef.current.dateStr, startMin, duration)
+        await restoreBlockToTime(supabase, id, stateRef.current.dateStr, startMin, originalDuration)
+        bumpArchiveVersion()
       },
       { label: 'Restoring block...', priority: 'normal', timeout: 10000 }
     )
-  }, [supabase, user])
+  }, [supabase, user, bumpArchiveVersion])
 
   const moveBlock = useCallback((id, newStart) => {
     dispatch({ type: 'MOVE_BLOCK', payload: { id, newStart } })
@@ -280,10 +316,12 @@ export function StoreProvider({ children }) {
     completedDays: state.completedDays,
     streak,
     dbError,
+    archiveVersion,
     goToDate,
     addBlock,
     updateBlock,
     deleteBlock: deleteBlockAction,
+    deleteArchivedBlock,
     archiveBlock: archiveBlockAction,
     restoreBlock: restoreBlockAction,
     restoreDroppedBlock,
@@ -293,7 +331,7 @@ export function StoreProvider({ children }) {
     selectBlock,
     toggleLock,
     completeDay,
-  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, goToDate, addBlock, updateBlock, deleteBlockAction, archiveBlockAction, restoreBlockAction, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, completeDay])
+  }), [state.blocks, state.dateStr, state.loaded, state.loading, state.selectedId, state.completedDays, streak, dbError, archiveVersion, goToDate, addBlock, updateBlock, deleteBlockAction, deleteArchivedBlock, archiveBlockAction, restoreBlockAction, restoreDroppedBlock, moveBlock, resizeBlock, resizeBlockStart, selectBlock, toggleLock, completeDay])
 
   return (
     <StoreContext.Provider value={value}>

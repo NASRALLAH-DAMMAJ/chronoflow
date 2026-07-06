@@ -13,6 +13,10 @@ export async function fetchSchedule(supabase, dateStr) {
 
     if (error) throw new Error(`Schedule function error: ${error.message}`)
 
-    return (data.blocks || []).map(blockFromDb)
+    return (data.blocks || []).map(b => {
+      const block = blockFromDb(b)
+      if (block.category === 'sleep') block.locked = true
+      return block
+    })
   })
 }

@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { drawDial } from './DialCanvas'
 import { useDialInteraction } from './useDialInteraction'
-import { CATEGORY_COLORS, MINUTES_IN_DAY, DIAL } from '../../store/constants'
-import { minutesToStr } from '../../utils'
+import { toWorldMinute } from './zoom-utils'
+import { CATEGORY_COLORS, MINUTES_IN_DAY, DIAL, SNAP_MINUTES } from '../../store/constants'
+import { minutesToStr, snapToGrid } from '../../utils'
+import RangeSelector from '../RangeSelector'
 
 function getCurrentMinutes() {
   const now = new Date()
@@ -18,8 +20,14 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
   const [placementStart, setPlacementStart] = useState(null)
   const [placementPos, setPlacementPos] = useState(null)
   const colorsRef = useRef(null)
-  const pinchRef = useRef(null)
   const [themeVersion, setThemeVersion] = useState(0)
+  const [showRangeSelector, setShowRangeSelector] = useState(false)
+  const [timeFormat, setTimeFormat] = useState(() => {
+    try { return localStorage.getItem('chrono_timeFormat') || '24h' } catch { return '24h' }
+  })
+  const [labelInterval, setLabelInterval] = useState(() => {
+    try { return parseInt(localStorage.getItem('chrono_labelInterval')) || 180 } catch { return 180 }
+  })
 
   useEffect(() => {
     const el = wrapperRef.current
@@ -101,49 +109,13 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       }
     }
 
-    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart)
-  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart, themeVersion])
+    drawDial(ctx, cx, cy, radius, displayBlocks, selectedId, currentTime, colorsRef.current, zoomRange, placement, placementPos, placementStart, labelInterval, timeFormat)
+  }, [displayBlocks, selectedId, currentTime, dialSize, zoomRange, placement, placementPos, placementStart, themeVersion, labelInterval, timeFormat])
 
-  const handleWheel = useCallback((e) => {
-    if (placement) return
-    e.preventDefault()
-    const rect = e.currentTarget.getBoundingClientRect()
-    const cx = rect.width / 2
-    const cy = rect.height / 2
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const dx = x - cx
-    const dy = y - cy
-
-    const pointerAngle = Math.atan2(dy, dx)
-    const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
-
-    const zoomFactor = e.deltaY > 0 ? 1.2 : 1 / 1.2
-    const snap = (m) => Math.round(m / 15) * 15
-
-    if (!zoomRange) {
-      const newRange = Math.max(60, MINUTES_IN_DAY / zoomFactor)
-      const center = snap(pointerRenderMinute)
-      let start = Math.max(0, center - newRange / 2)
-      let end = Math.min(MINUTES_IN_DAY, start + newRange)
-      if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
-      if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
-      setZoomRange({ start: snap(start), end: snap(end) })
-    } else {
-      const { start, end } = zoomRange
-      const range = end - start
-      const newRange = Math.max(60, Math.min(MINUTES_IN_DAY, range / zoomFactor))
-
-      const pointerWorldMinute = start + (pointerRenderMinute / MINUTES_IN_DAY) * range
-      let newStart = pointerWorldMinute - (pointerRenderMinute / MINUTES_IN_DAY) * newRange
-      let newEnd = newStart + newRange
-
-      if (newStart < 0) { newStart = 0; newEnd = newRange }
-      if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
-      if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
-      else setZoomRange({ start: snap(newStart), end: snap(newEnd) })
-    }
-  }, [zoomRange, placement])
+  const handleRangeSelect = useCallback((range) => {
+    setZoomRange(range)
+    setShowRangeSelector(false)
+  }, [])
 
   const handleKeyDown = useCallback((e) => {
     if (placement) return
@@ -163,62 +135,6 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     }
   }, [placement])
 
-  const handleTouchStart = useCallback((e) => {
-    if (placement) return
-    if (e.touches.length === 2) {
-      const t = e.touches
-      pinchRef.current = {
-        dist: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY),
-      }
-    }
-  }, [placement])
-
-  const handleTouchMove = useCallback((e) => {
-    if (placement) return
-    if (e.touches.length === 2 && pinchRef.current) {
-      e.preventDefault()
-      const t = e.touches
-      const dist = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
-      const scale = dist / pinchRef.current.dist
-      pinchRef.current.dist = dist
-
-      const rect = e.currentTarget.getBoundingClientRect()
-      const cx = rect.width / 2
-      const cy = rect.height / 2
-      const mx = (t[0].clientX + t[1].clientX) / 2 - rect.left
-      const my = (t[0].clientY + t[1].clientY) / 2 - rect.top
-      const pointerAngle = Math.atan2(my - cy, mx - cx)
-    const pointerRenderMinute = (((pointerAngle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
-
-      const snap = (m) => Math.round(m / 15) * 15
-
-      if (!zoomRange) {
-        const newRange = Math.max(60, MINUTES_IN_DAY / scale)
-        const center = snap(pointerRenderMinute)
-        let start = Math.max(0, center - newRange / 2)
-        let end = Math.min(MINUTES_IN_DAY, start + newRange)
-        if (end - start < 60) { end = Math.min(MINUTES_IN_DAY, start + 60) }
-        if (end >= MINUTES_IN_DAY) { end = MINUTES_IN_DAY; start = MINUTES_IN_DAY - Math.max(60, end - start) }
-        setZoomRange({ start: snap(start), end: snap(end) })
-      } else {
-        const { start, end } = zoomRange
-        const range = end - start
-        const newRange = Math.max(60, Math.min(MINUTES_IN_DAY, range / scale))
-        const pointerWorldMinute = start + (pointerRenderMinute / MINUTES_IN_DAY) * range
-        let newStart = pointerWorldMinute - (pointerRenderMinute / MINUTES_IN_DAY) * newRange
-        let newEnd = newStart + newRange
-        if (newStart < 0) { newStart = 0; newEnd = newRange }
-        if (newEnd > MINUTES_IN_DAY) { newEnd = MINUTES_IN_DAY; newStart = MINUTES_IN_DAY - newRange }
-        if (newRange >= MINUTES_IN_DAY) setZoomRange(null)
-        else setZoomRange({ start: snap(newStart), end: snap(newEnd) })
-      }
-    }
-  }, [zoomRange, placement])
-
-  const handleTouchEnd = useCallback(() => {
-    pinchRef.current = null
-  }, [])
-
   const resetZoom = useCallback(() => setZoomRange(null), [])
 
   const handlePlacePointerDown = useCallback((e) => {
@@ -235,10 +151,11 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     const innerR = radius * DIAL.INNER_RADIUS_RATIO
     if (dist < innerR || dist > radius) return
     const angle = Math.atan2(dy, dx)
-    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    const renderMin = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    const minute = toWorldMinute(renderMin, zoomRange)
     setPlacementStart(minute)
     setPlacementPos(minute)
-  }, [placement, placementStart])
+  }, [placement, placementStart, zoomRange])
 
   const handlePlacePointerMove = useCallback((e) => {
     if (!placement) return
@@ -257,9 +174,10 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       return
     }
     const angle = Math.atan2(dy, dx)
-    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    const renderMin = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    const minute = toWorldMinute(renderMin, zoomRange)
     setPlacementPos(minute)
-  }, [placement])
+  }, [placement, zoomRange])
 
   const handlePlacePointerUp = useCallback((e) => {
     if (!placement || placementStart === null) return
@@ -279,11 +197,12 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
       return
     }
     const angle = Math.atan2(dy, dx)
-    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    const renderMin = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    const minute = toWorldMinute(renderMin, zoomRange)
     onPlaceBlock(placementStart, minute)
     setPlacementStart(null)
     setPlacementPos(null)
-  }, [placement, placementStart, onPlaceBlock])
+  }, [placement, placementStart, zoomRange, onPlaceBlock])
 
   const handlePlacePointerLeave = useCallback(() => {
     if (!placement || placementStart === null) return
@@ -321,9 +240,10 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
     const innerR = radius * DIAL.INNER_RADIUS_RATIO
     if (dist < innerR || dist > radius) return
     const angle = Math.atan2(dy, dx)
-    const minute = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
-    onDropArchive(blockId, minute, (minute + 60) % MINUTES_IN_DAY)
-  }, [onDropArchive])
+    const renderMin = (((angle + Math.PI / 2) / (2 * Math.PI)) * MINUTES_IN_DAY + MINUTES_IN_DAY) % MINUTES_IN_DAY
+    const minute = snapToGrid(toWorldMinute(renderMin, zoomRange), SNAP_MINUTES)
+    onDropArchive(blockId, minute)
+  }, [onDropArchive, zoomRange])
 
   const getCursorStyle = () => {
     if (placement) return placementStart != null ? 'grabbing' : 'crosshair'
@@ -370,53 +290,96 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
           touchAction: 'none',
           userSelect: 'none',
         }}
-        onWheel={placement ? undefined : handleWheel}
-        onTouchStart={placement ? undefined : handleTouchStart}
-        onTouchMove={placement ? undefined : handleTouchMove}
-        onTouchEnd={placement ? undefined : handleTouchEnd}
         onPointerDown={placement ? handlePlacePointerDown : handlers.onPointerDown}
         onPointerMove={placement ? handlePlacePointerMove : handlers.onPointerMove}
         onPointerUp={placement ? handlePlacePointerUp : handlers.onPointerUp}
         onPointerLeave={placement ? handlePlacePointerLeave : handlers.onPointerLeave}
         onKeyDown={handleKeyDown}
       />
-      {zoomRange && (
-        <div style={{
-          position: 'absolute',
-          top: 8,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '4px 10px',
-          borderRadius: 6,
-          backgroundColor: 'var(--clr-surface-elevated)',
-          border: '1px solid var(--clr-border)',
-          fontSize: 11,
-          color: 'var(--clr-text-secondary)',
-          fontFamily: 'var(--ff-mono)',
-          whiteSpace: 'nowrap',
-          zIndex: 10,
-        }}>
-          {minutesToStr(zoomRange.start)} – {minutesToStr(zoomRange.end)}
-          <button
-            onClick={resetZoom}
-            aria-label="Reset zoom"
-            style={{
-              border: 'none',
-              background: 'none',
-              color: 'var(--clr-text-tertiary)',
-              cursor: 'pointer',
-              fontSize: 13,
-              padding: '0 2px',
-              lineHeight: 1,
-            }}
-            title="Reset zoom"
-          >
-            ✕
-          </button>
-        </div>
+      <div style={{
+        position: 'absolute',
+        top: 4,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 10,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+      }}>
+        <button
+          onClick={() => setShowRangeSelector(true)}
+          aria-label="Select time range"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '4px 10px',
+            borderRadius: 6,
+            backgroundColor: 'var(--clr-surface-elevated)',
+            border: '1px solid var(--clr-border)',
+            fontSize: 11,
+            fontFamily: 'var(--ff-mono)',
+            color: 'var(--clr-text-secondary)',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {zoomRange
+            ? <>{minutesToStr(zoomRange.start)} – {minutesToStr(zoomRange.end)}</>
+            : 'Full day'}
+          {zoomRange && (
+            <span
+              onClick={(e) => { e.stopPropagation(); resetZoom() }}
+              style={{ marginLeft: 2, color: 'var(--clr-text-tertiary)', fontSize: 13, lineHeight: 1 }}
+            >
+              ✕
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => {
+            const next = timeFormat === '24h' ? '12h' : '24h'
+            setTimeFormat(next)
+            try { localStorage.setItem('chrono_timeFormat', next) } catch {}
+          }}
+          title="Toggle 12h/24h time format"
+          style={{
+            padding: '4px 6px', borderRadius: 6, fontSize: 10,
+            backgroundColor: 'var(--clr-surface-elevated)',
+            border: '1px solid var(--clr-border)',
+            color: 'var(--clr-text-secondary)',
+            cursor: 'pointer', fontFamily: 'var(--ff-mono)',
+          }}
+        >
+          {timeFormat}
+        </button>
+        <button
+          onClick={() => {
+            const intervals = [0, 60, 120, 180, 240, 360, 720]
+            const idx = intervals.indexOf(labelInterval)
+            const next = intervals[(idx + 1) % intervals.length]
+            setLabelInterval(next)
+            try { localStorage.setItem('chrono_labelInterval', String(next)) } catch {}
+          }}
+          title="Change label interval"
+          style={{
+            padding: '4px 6px', borderRadius: 6, fontSize: 10,
+            backgroundColor: 'var(--clr-surface-elevated)',
+            border: '1px solid var(--clr-border)',
+            color: 'var(--clr-text-secondary)',
+            cursor: 'pointer', fontFamily: 'var(--ff-mono)',
+          }}
+        >
+          {labelInterval === 0 ? '--' : labelInterval / 60 + 'h'}
+        </button>
+      </div>
+
+      {showRangeSelector && (
+        <RangeSelector
+          currentRange={zoomRange}
+          onSelect={handleRangeSelect}
+          onClose={() => setShowRangeSelector(false)}
+        />
       )}
     </div>
   )

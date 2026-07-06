@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { MINUTES_IN_DAY, DIAL } from '../store/constants'
-import { minutesToStr } from '../utils'
+import { MINUTES_IN_DAY, DIAL, SNAP_MINUTES } from '../store/constants'
+import { minutesToStr, snapToGrid } from '../utils'
 
 export default function SleepScheduleDialog({ bedtime: initialBed, wake: initialWake, onSave, onClose }) {
   const canvasRef = useRef(null)
@@ -27,24 +27,25 @@ export default function SleepScheduleDialog({ bedtime: initialBed, wake: initial
   }, [])
 
   const handlePointerDown = useCallback((e) => {
-    const m = minuteFromPointer(e)
-    if (m === null) return
+    const raw = minuteFromPointer(e)
+    if (raw === null) return
+    const m = snapToGrid(raw, SNAP_MINUTES)
     const distToBed = Math.abs(m - bedtime) % MINUTES_IN_DAY
     const distToWake = Math.abs(m - wake) % MINUTES_IN_DAY
     const d1 = Math.min(distToBed, MINUTES_IN_DAY - distToBed)
     const d2 = Math.min(distToWake, MINUTES_IN_DAY - distToWake)
-    if (d1 < d2 && d1 < 60) setEditing('bedtime')
-    else if (d2 < 60) setEditing('wake')
-    else setEditing('bedtime')
-    if (editing === 'bedtime' || (d2 >= 60 && d1 >= 60)) setBedtime(m)
+    const nextEditing = d1 < d2 && d1 < 60 ? 'bedtime' : d2 < 60 ? 'wake' : 'bedtime'
+    setEditing(nextEditing)
+    if (nextEditing === 'bedtime') setBedtime(m)
     else setWake(m)
-  }, [minuteFromPointer, bedtime, wake, editing])
+  }, [minuteFromPointer, bedtime, wake])
 
   const handlePointerMove = useCallback((e) => {
     if (!editing) return
     e.preventDefault()
-    const m = minuteFromPointer(e)
-    if (m === null) return
+    const raw = minuteFromPointer(e)
+    if (raw === null) return
+    const m = snapToGrid(raw, SNAP_MINUTES)
     if (editing === 'bedtime') setBedtime(m)
     else setWake(m)
   }, [minuteFromPointer, editing])

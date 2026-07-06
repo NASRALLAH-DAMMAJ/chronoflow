@@ -9,6 +9,10 @@ export function blockReducer(state, action) {
   switch (action.type) {
     case 'ADD_BLOCK': {
       const block = createBlock(action.payload)
+      const exists = state.blocks.find(b => b.id === block.id)
+      if (exists) {
+        return { ...state, blocks: state.blocks.map(b => b.id === block.id ? { ...b, ...block } : b) }
+      }
       return { ...state, blocks: [...state.blocks, block] }
     }
     case 'UPDATE_BLOCK': {
