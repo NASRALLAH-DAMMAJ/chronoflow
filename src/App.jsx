@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import { StoreProvider, useStore, getTodayStr, CATEGORY_COLORS, ROUTES, LS_KEYS, SLEEP_CATEGORY, MINUTES_IN_DAY, SNAP_MINUTES } from './store'
 import { Dial } from './components/Dial'
 import { BlockForm } from './components/BlockForm'
@@ -16,13 +16,13 @@ import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
 import NetworkIndicator from './components/NetworkIndicator'
 import ArchiveList from './components/ArchiveList'
+import HeaderMenu from './components/HeaderMenu'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
 import { useSwipe, haptic } from './hooks/useSwipe'
 import LoginPage from './pages/LoginPage'
 import ProtectedRoute from './pages/ProtectedRoute'
 
 const RecurringRulesPage = React.lazy(() => import('./pages/RecurringRulesPage'))
-const SettingsPage = React.lazy(() => import('./pages/SettingsPage'))
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'))
 
 function AppContent() {
@@ -201,25 +201,10 @@ function AppContent() {
               Today
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={toggle} style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 4 }}>
-            {isDark ? <><IconSun /> Light</> : <><IconMoon /> Dark</>}
+          <Button variant="ghost" size="sm" onClick={toggle} aria-label={isDark ? 'Switch to light' : 'Switch to dark'} style={{ display: 'flex', padding: '4px 6px' }}>
+            {isDark ? <IconSun /> : <IconMoon />}
           </Button>
-          <Link to={ROUTES.ANALYTICS} style={{
-            fontSize: 12, color: 'var(--clr-text-secondary)',
-            textDecoration: 'none', padding: '4px 8px',
-          }}>
-            Analytics
-          </Link>
-
-          <Link to={ROUTES.SETTINGS} style={{
-            fontSize: 12, color: 'var(--clr-text-secondary)',
-            textDecoration: 'none', padding: '4px 8px',
-          }}>
-            Settings
-          </Link>
-          <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()} style={{ fontSize: 12 }}>
-            Sign out
-          </Button>
+          <HeaderMenu />
         </div>
       </header>
 
@@ -370,13 +355,6 @@ export default function App() {
         <React.Suspense fallback={<PageSpinner />}>
           <Routes>
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-          <Route path={ROUTES.SETTINGS} element={
-            <ProtectedRoute>
-              <ErrorBoundary name="Settings">
-                <SettingsPage />
-              </ErrorBoundary>
-            </ProtectedRoute>
-          } />
           <Route path={ROUTES.RULES} element={
             <ProtectedRoute>
               <ErrorBoundary name="Recurring Rules">
