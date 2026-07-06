@@ -36,6 +36,14 @@ export default function ArchiveList({ onRestore }) {
   const [expanded, setExpanded] = useState(false)
   const [blocks, setBlocks] = useState([])
   const [loading, setLoading] = useState(false)
+  const [hasArchived, setHasArchived] = useState(null)
+
+  useEffect(() => {
+    if (!user || hasArchived !== null) return
+    fetchArchivedBlocks(supabase, user.id, { limit: 1 }).then(data => {
+      setHasArchived(data.length > 0)
+    }).catch(() => setHasArchived(false))
+  }, [supabase, user, hasArchived])
 
   const load = useCallback(async () => {
     if (!user || !expanded) return
@@ -43,18 +51,23 @@ export default function ArchiveList({ onRestore }) {
     try {
       const data = await fetchArchivedBlocks(supabase, user.id, { limit: 30 })
       setBlocks(data)
+      setHasArchived(data.length > 0)
     } catch (e) {
       console.error('Failed to load archived blocks:', e)
     }
     setLoading(false)
   }, [supabase, user, expanded])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { if (expanded) load() }, [expanded, load])
 
   const handleRestore = useCallback(async (block) => {
     try {
       await onRestore(block.id)
-      setBlocks(prev => prev.filter(b => b.id !== block.id))
+      setBlocks(prev => {
+        const next = prev.filter(b => b.id !== block.id)
+        if (next.length === 0) setHasArchived(false)
+        return next
+      })
     } catch (e) {
       console.error('Failed to restore block:', e)
     }
@@ -66,7 +79,7 @@ export default function ArchiveList({ onRestore }) {
     e.dataTransfer.setData('text/plain', block.label)
   }, [])
 
-  if (blocks.length === 0 && !expanded) return null
+  if (hasArchived === false || hasArchived === null) return null
 
   return (
     <div style={{ marginBottom: expanded ? 12 : 0, borderBottom: expanded ? '1px solid var(--clr-border)' : 'none', paddingBottom: expanded ? 12 : 0 }}>

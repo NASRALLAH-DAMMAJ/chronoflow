@@ -4,16 +4,11 @@ import { useSupabase } from '../lib/SupabaseContext'
 import { fetchSettings, upsertSettings } from '../lib/settings'
 import { exportToJSON, exportToCSV } from '../lib/export'
 import { fetchBlocksForRange } from '../lib/analytics'
-import { Button } from '../design-system/components'
 import { minutesToStr } from '../utils'
 import { useDarkMode } from '../design-system/hooks/useDarkMode'
 import { ROUTES, DEFAULT_BEDTIME, DEFAULT_WAKE, SNAP_MINUTES, CATEGORY_COLORS, NO_CATEGORY } from '../store/constants'
 import { BarChart3, Download, LogOut, User, Moon, Sun } from 'lucide-react'
-
-function parseTime(str) {
-  const [h, m] = str.split(':').map(Number)
-  return h * 60 + m
-}
+import SleepScheduleDialog from './SleepScheduleDialog'
 
 export default function HeaderMenu() {
   const navigate = useNavigate()
@@ -26,6 +21,7 @@ export default function HeaderMenu() {
   const [theme, setTheme] = useState('system')
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
+  const [showSleepDialog, setShowSleepDialog] = useState(false)
   const [analytics, setAnalytics] = useState(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
@@ -90,6 +86,12 @@ export default function HeaderMenu() {
     }
     setSavingSettings(false)
   }, [supabase, user, sleepStart, sleepEnd, theme])
+
+  const handleSleepDialogSave = useCallback((bedtime, wake) => {
+    setSleepStart(Math.round(bedtime))
+    setSleepEnd(Math.round(wake))
+    setShowSleepDialog(false)
+  }, [])
 
   useEffect(() => {
     if (settingsLoaded) handleSaveSettings()
@@ -233,24 +235,26 @@ export default function HeaderMenu() {
           {/* Sleep Schedule */}
           <div style={sectionLabel}>Sleep Schedule</div>
           <div style={{ display: 'flex', gap: 12, padding: '4px 12px 8px' }}>
-            <div style={{ flex: 1 }}>
+            <div>
               <div style={{ fontSize: 10, color: 'var(--clr-text-tertiary)', marginBottom: 3 }}>Bedtime</div>
-              <input
-                type="time"
-                value={minutesToStr(sleepStart)}
-                onChange={e => setSleepStart(parseTime(e.target.value))}
-                style={inputStyle}
-              />
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#A78BFA' }}>{minutesToStr(sleepStart)}</div>
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <div style={{ fontSize: 10, color: 'var(--clr-text-tertiary)', marginBottom: 3 }}>Wake up</div>
-              <input
-                type="time"
-                value={minutesToStr(sleepEnd)}
-                onChange={e => setSleepEnd(parseTime(e.target.value))}
-                style={inputStyle}
-              />
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#7C3AED' }}>{minutesToStr(sleepEnd)}</div>
             </div>
+            <button
+              onClick={() => setShowSleepDialog(true)}
+              style={{
+                marginLeft: 'auto', alignSelf: 'end',
+                padding: '6px 12px', fontSize: 12, fontWeight: 500,
+                border: '1px solid var(--clr-border)', borderRadius: 6,
+                background: 'none', color: 'var(--clr-text-secondary)',
+                cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+              }}
+            >
+              Set on dial
+            </button>
           </div>
           {savingSettings && <div style={{ padding: '2px 12px 6px', fontSize: 10, color: 'var(--clr-text-tertiary)' }}>Saving...</div>}
 
@@ -311,6 +315,15 @@ export default function HeaderMenu() {
 
 
         </div>
+      )}
+
+      {showSleepDialog && (
+        <SleepScheduleDialog
+          bedtime={sleepStart}
+          wake={sleepEnd}
+          onSave={handleSleepDialogSave}
+          onClose={() => setShowSleepDialog(false)}
+        />
       )}
     </div>
   )
