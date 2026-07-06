@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { CATEGORY_COLORS, MINUTES_IN_DAY } from '../store/constants'
 import { IconClock } from '../design-system/icons'
 import { Lock, Unlock, Pencil, Archive, Trash2, MoreVertical } from 'lucide-react'
@@ -20,6 +20,19 @@ const iconBtn = {
 }
 
 export const BlockList = React.memo(function BlockList({ blocks, selectedId, onSelectBlock, onDeleteBlock, onArchiveBlock, onEditBlock, onToggleLock, contextBlockId, onContextMenu, contextRef, onEditRule }) {
+  const [menuBlockId, setMenuBlockId] = useState(null)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuBlockId(null)
+      }
+    }
+    if (menuBlockId) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [menuBlockId])
+
   if (blocks.length === 0) {
     return (
       <div className="animate-fade-in" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--clr-text-tertiary)' }}>
@@ -58,6 +71,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
             aria-pressed={isSelected}
             aria-label={`${block.label}, ${minutesToStr(block.start)} to ${minutesToStr(block.end)}, ${block.category}`}
             style={{
+              contain: 'content',
               animation: `fadeInUp 0.2s ease-out ${index * 0.03}s both`,
               display: 'flex',
               alignItems: 'stretch',
@@ -76,7 +90,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {block.label}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 12, color: 'var(--clr-text-secondary)', whiteSpace: 'nowrap' }}>
                   {minutesToStr(block.start)} – {minutesToStr(block.end)}
                 </span>
@@ -91,7 +105,7 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
                 )}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, marginLeft: 4 }}>
+            <div className="block-actions-desktop" style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, marginLeft: 4 }}>
               {block.is_recurring && (
                 <div style={{ position: 'relative' }}>
                   <button
@@ -150,6 +164,78 @@ export const BlockList = React.memo(function BlockList({ blocks, selectedId, onS
               <button onClick={e => { e.stopPropagation(); onDeleteBlock(block.id) }} aria-label={`Delete ${block.label}`} style={iconBtn}>
                 <Trash2 size={13} />
               </button>
+            </div>
+            <div className="block-actions-mobile" style={{ display: 'none', alignItems: 'center', flexShrink: 0, marginLeft: 4, position: 'relative' }}>
+              <button
+                onClick={e => { e.stopPropagation(); setMenuBlockId(menuBlockId === block.id ? null : block.id) }}
+                aria-label="More actions"
+                style={iconBtn}
+              >
+                <MoreVertical size={13} />
+              </button>
+              {menuBlockId === block.id && (
+                <div ref={menuRef} style={{
+                  position: 'absolute', right: 0, top: '100%', zIndex: 50,
+                  minWidth: 120, padding: 4,
+                  background: 'var(--clr-surface-elevated)',
+                  border: '1px solid var(--clr-border)',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                }}>
+                  <button
+                    onClick={e => { e.stopPropagation(); onEditBlock(block); setMenuBlockId(null) }}
+                    style={{
+                      display: 'flex', width: '100%', padding: '6px 10px', alignItems: 'center', gap: 6,
+                      border: 'none', background: 'none', cursor: 'pointer',
+                      fontSize: 12, textAlign: 'left', color: 'var(--clr-text)', borderRadius: 4,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <Pencil size={11} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); onToggleLock && onToggleLock(block.id); setMenuBlockId(null) }}
+                    style={{
+                      display: 'flex', width: '100%', padding: '6px 10px', alignItems: 'center', gap: 6,
+                      border: 'none', background: 'none', cursor: 'pointer',
+                      fontSize: 12, textAlign: 'left', color: block.locked ? '#D97706' : 'var(--clr-text)', borderRadius: 4,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    {block.locked ? <Unlock size={11} /> : <Lock size={11} />}
+                    {block.locked ? 'Unlock' : 'Lock'}
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); onArchiveBlock(block.id); setMenuBlockId(null) }}
+                    style={{
+                      display: 'flex', width: '100%', padding: '6px 10px', alignItems: 'center', gap: 6,
+                      border: 'none', background: 'none', cursor: 'pointer',
+                      fontSize: 12, textAlign: 'left', color: 'var(--clr-text)', borderRadius: 4,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <Archive size={11} />
+                    Archive
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); onDeleteBlock(block.id); setMenuBlockId(null) }}
+                    style={{
+                      display: 'flex', width: '100%', padding: '6px 10px', alignItems: 'center', gap: 6,
+                      border: 'none', background: 'none', cursor: 'pointer',
+                      fontSize: 12, textAlign: 'left', color: '#EF4444', borderRadius: 4,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--clr-bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <Trash2 size={11} />
+                    Delete
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )

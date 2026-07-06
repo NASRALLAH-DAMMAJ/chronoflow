@@ -331,6 +331,19 @@ button, a, input, select, textarea {
   .mobile-stack {
     flex-direction: column !important;
   }
+
+  .dial-wrapper {
+    padding: 0 var(--sp-5) !important;
+  }
+
+  .blocklist-add-sticky {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: var(--clr-surface) !important;
+    padding-top: var(--sp-2) !important;
+    margin-bottom: var(--sp-2) !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -341,11 +354,27 @@ button, a, input, select, textarea {
   #main-content {
     padding: var(--sp-2) var(--sp-2) !important;
   }
+
+  .block-actions-desktop {
+    display: none !important;
+  }
+
+  .block-actions-mobile {
+    display: flex !important;
+  }
 }
 
-@media (min-width: 721px) {
+@media (min-width: 481px) {
   .mobile-only {
     display: none !important;
+  }
+
+  .block-actions-mobile {
+    display: none !important;
+  }
+
+  .block-actions-desktop {
+    display: flex !important;
   }
 }
 

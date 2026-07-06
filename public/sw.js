@@ -1,91 +1,94 @@
-const CACHE = 'chronoflow-v2'
-const STATIC_CACHE = 'chronoflow-static-v2'
-const API_CACHE = 'chronoflow-api-v2'
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.1.0/workbox-sw.js')
 
-const PRECACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-]
+if (!workbox) {
+  console.error('Workbox failed to load from CDN')
+}
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE))
-  )
-  self.skipWaiting()
+workbox.setConfig({
+  debug: false,
 })
 
-self.addEventListener('activate', (event) => {
-  const keep = new Set([CACHE, STATIC_CACHE, API_CACHE])
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
-  )
+const CACHE_NAME = 'chronoflow-v1'
+workbox.core.setCacheNameDetails({
+  prefix: 'chronoflow',
+  suffix: 'v1',
+  precache: CACHE_NAME,
+  runtime: 'runtime',
+  googleAnalytics: 'ga',
 })
 
-function isApiRequest(url) {
-  const u = new URL(url)
-  return u.hostname === 'dkuwoqqgdihmkadkiczu.supabase.co'
-}
+const { registerRoute } = workbox.routing
+const {
+  StaleWhileRevalidate,
+  NetworkFirst,
+  CacheFirst,
+} = workbox.strategies
+const { CacheableResponsePlugin } = workbox.cacheableResponse
+const { ExpirationPlugin } = workbox.expiration
 
-function isStaticAsset(url) {
-  const u = new URL(url)
-  const ext = u.pathname.split('.').pop()
-  return ['js', 'css', 'woff2', 'woff', 'ttf', 'svg', 'png', 'ico', 'webp'].includes(ext)
-}
-
-function isNavigation(url) {
-  const u = new URL(url)
-  return u.origin === location.origin && u.pathname === '/'
-}
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event
-  if (request.method !== 'GET') return
-
-  if (isApiRequest(request.url)) {
-    event.respondWith(networkFirst(request, API_CACHE))
-  } else if (isStaticAsset(request.url)) {
-    event.respondWith(cacheFirst(request))
-  } else if (isNavigation(request.url)) {
-    event.respondWith(networkFirst(request, STATIC_CACHE))
-  } else {
-    event.respondWith(networkFirst(request, CACHE))
-  }
+const staticHandler = new CacheFirst({
+  cacheName: CACHE_NAME,
+  plugins: [
+    new CacheableResponsePlugin({ statuses: [0, 200] }),
+  ],
 })
 
-async function networkFirst(request, cacheName) {
-  try {
-    const response = await fetch(request)
-    if (response.ok) {
-      const clone = response.clone()
-      caches.open(cacheName).then((cache) => cache.put(request, clone))
-    }
-    return response
-  } catch {
-    const cached = await caches.match(request)
-    if (cached) return cached
-    if (request.mode === 'navigate') {
-      return caches.match('/')
-    }
-    return new Response('Offline', { status: 503 })
-  }
-}
+registerRoute(
+  ({ request }) => {
+    const { mode, destination } = request
+    if (mode === 'navigate') return false
+    const ext = new URL(request.url).pathname.split('.').pop()
+    return ['js', 'css', 'html', 'woff2', 'woff', 'ttf'].includes(ext)
+  },
+  staticHandler,
+)
 
-async function cacheFirst(request) {
-  const cached = await caches.match(request)
-  if (cached) return cached
-  try {
-    const response = await fetch(request)
-    if (response.ok) {
-      const clone = response.clone()
-      caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone))
-    }
-    return response
-  } catch {
-    return new Response('Offline', { status: 503 })
+const imageHandler = new StaleWhileRevalidate({
+  cacheName: `${CACHE_NAME}-images`,
+  plugins: [
+    new CacheableResponsePlugin({ statuses: [0, 200] }),
+    new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+  ],
+})
+
+registerRoute(
+  ({ request }) => {
+    const ext = new URL(request.url).pathname.split('.').pop()
+    return ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].includes(ext)
+  },
+  imageHandler,
+)
+
+const apiHandler = new NetworkFirst({
+  cacheName: `${CACHE_NAME}-api`,
+  plugins: [
+    new CacheableResponsePlugin({ statuses: [0, 200] }),
+    new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 }),
+  ],
+})
+
+registerRoute(
+  ({ url }) => /supabase\.co/.test(url.hostname),
+  apiHandler,
+)
+
+const navHandler = new NetworkFirst({
+  cacheName: CACHE_NAME,
+  plugins: [
+    new CacheableResponsePlugin({ statuses: [0, 200] }),
+  ],
+})
+
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  navHandler,
+)
+
+workbox.core.skipWaiting()
+workbox.core.clientsClaim()
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
   }
-}
+})

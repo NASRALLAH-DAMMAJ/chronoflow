@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChronoFlow - Offline</title>
+    <meta name="theme-color" content="#18181B" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #09090B;
+        color: #A1A1AA;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .container {
+        text-align: center;
+        max-width: 360px;
+      }
+      .icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 24px;
+        border: 2px solid #27272A;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #FAFAFA;
+        margin-bottom: 8px;
+      }
+      p {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #71717A;
+        margin-bottom: 24px;
+      }
+      button {
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        background: #3B82F6;
+        color: #FFFFFF;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover { background: #2563EB; }
+      button:focus-visible { outline: 2px solid #60A5FA; outline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon" aria-hidden="true">&#9888;</div>
+      <h1>You're offline</h1>
+      <p>ChronoFlow needs a network connection to load. Check your connection and try again.</p>
+      <button onclick="window.location.reload()">Retry</button>
+    </div>
+  </body>
+</html>

@@ -264,6 +264,7 @@ export const Dial = React.memo(function Dial({ blocks, selectedId, onMoveBlock, 
   return (
     <div
       ref={wrapperRef}
+      className="dial-wrapper"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

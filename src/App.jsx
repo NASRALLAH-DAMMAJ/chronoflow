@@ -17,6 +17,8 @@ import OfflineBanner from './components/OfflineBanner'
 import NetworkIndicator from './components/NetworkIndicator'
 import ArchiveList from './components/ArchiveList'
 import HeaderMenu from './components/HeaderMenu'
+import SwUpdatePrompt from './components/SwUpdatePrompt'
+import { registerSW } from './sw-register'
 import { useSessionMonitor } from './hooks/useSessionMonitor'
 import { useSwipe, haptic } from './hooks/useSwipe'
 import LoginPage from './pages/LoginPage'
@@ -129,6 +131,13 @@ function AppContent() {
   }, [contextBlockId])
 
   const formOpen = showForm || editingBlock
+  const dialRef = useRef(null)
+
+  useEffect(() => {
+    if (placement && dialRef.current && window.innerWidth <= 720) {
+      dialRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [placement])
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -234,7 +243,7 @@ function AppContent() {
         flex: 1,
         animationDelay: '0.1s',
       }}>
-        <div className="animate-fade-in-scale" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div ref={dialRef} className="animate-fade-in-scale" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           {placement && (
             <div className="animate-slide-down" style={{
               fontSize: 13, color: 'var(--clr-text-secondary)',
@@ -266,7 +275,7 @@ function AppContent() {
 
         <div className="animate-slide-in-right" style={{ animationDelay: '0.15s' }}>
           <Card padding="var(--sp-4)">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div className="blocklist-add-sticky" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ fontSize: 'var(--fs-subtitle)', fontWeight: 600, color: 'var(--clr-text)', margin: 0 }}>
                 Blocks
               </h2>
@@ -358,6 +367,10 @@ function PageSpinner() {
 }
 
 export default function App() {
+  useEffect(() => {
+    registerSW()
+  }, [])
+
   return (
     <>
       <a href="#main-content" className="skip-link">
@@ -366,6 +379,7 @@ export default function App() {
       <ToastProvider>
         <OfflineBanner />
         <TaskIndicator />
+        <SwUpdatePrompt />
         <React.Suspense fallback={<PageSpinner />}>
           <Routes>
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />

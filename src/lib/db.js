@@ -1,5 +1,49 @@
 import Dexie from 'dexie'
 
+/**
+ * ChronoFlow IndexedDB Schema
+ *
+ * Database: ChronoFlow (Dexie wrapper over IndexedDB)
+ * Version: 1
+ *
+ * ── Table: blocks ──────────────────────────────────────────────
+ * Primary key: id (UUID string)
+ * Indexes:    user_id, date, archived, [user_id+date+start_min], updated_at
+ *
+ * @field {string}  id             - UUID unique block identifier
+ * @field {string}  user_id        - Supabase auth user ID
+ * @field {string}  date           - Date string in YYYY-MM-DD format
+ * @field {number}  start_min      - Start minute of the day (0-1439)
+ * @field {number}  duration       - Duration in minutes (1-1440)
+ * @field {string}  label          - Human-readable block label
+ * @field {string}  category       - One of: work, sleep, exercise, meal, leisure,
+ *                                   family, commute, chores, self-care, other
+ * @field {number}  is_recurring   - 1 if generated from a recurring rule, else 0
+ * @field {string|null} parent_rule_id - FK to recurring_rules table (nullable)
+ * @field {number}  archived       - 1 if archived (soft-deleted), else 0
+ * @field {number}  locked         - 1 if protected from auto-reschedule, else 0
+ * @field {string}  updated_at     - ISO 8601 timestamp of last write
+ *
+ * ── Table: sync_queue ──────────────────────────────────────────
+ * Primary key: id (auto-increment integer)
+ * Indexes:    status, created_at, record_id
+ *
+ * @field {number}  id             - Auto-increment primary key
+ * @field {string}  action         - Operation type: 'upsert' | 'delete'
+ * @field {string}  table          - Target table name (e.g. 'blocks')
+ * @field {string}  record_id      - ID of the affected record
+ * @field {object}  [payload]      - Full record data for upsert operations
+ * @field {string}  status         - 'pending' | 'failed'
+ * @field {number}  retry_count    - Number of failed processing attempts
+ * @field {string}  created_at     - ISO 8601 timestamp
+ *
+ * ── Table: settings ────────────────────────────────────────────
+ * Primary key: key (string, unique)
+ *
+ * @field {string}  key            - Setting key (e.g. 'theme', 'locale')
+ * @field {*}       value          - Arbitrary setting value
+ */
+
 const DB_NAME = 'ChronoFlow'
 const DB_VERSION = 1
 const HEALTH_CHECK_TIMEOUT = 3000
@@ -11,6 +55,31 @@ db.version(DB_VERSION).stores({
   sync_queue: '++id, status, created_at, record_id',
   settings: '&key',
 })
+
+// ── Performance metrics ──────────────────────────────────────
+const _metrics = {
+  dbOpenedAt: null,
+  operations: {},
+  _initialized: false,
+}
+
+function _initMetrics() {
+  if (!_metrics._initialized) {
+    _metrics.dbOpenedAt = typeof performance !== 'undefined' ? performance.now() : null
+    _metrics._initialized = true
+  }
+}
+
+function _trackOp(name) {
+  _initMetrics()
+  const start = typeof performance !== 'undefined' ? performance.now() : 0
+  return () => {
+    if (typeof performance === 'undefined') return
+    const dur = performance.now() - start
+    if (!_metrics.operations[name]) _metrics.operations[name] = []
+    _metrics.operations[name].push(dur)
+  }
+}
 
 function now() {
   return new Date().toISOString()
@@ -48,28 +117,48 @@ export const blockFromDbRecord = (row) => {
 }
 
 export async function seedBlocks(records) {
-  const timestamp = now()
-  const enriched = records.map(r => ({ ...r, updated_at: timestamp }))
-  await db.blocks.bulkPut(enriched)
+  const end = _trackOp('seedBlocks')
+  try {
+    const timestamp = now()
+    const enriched = records.map(r => ({ ...r, updated_at: timestamp }))
+    await db.blocks.bulkPut(enriched)
+  } finally {
+    end()
+  }
 }
 
 export async function getBlocksByDate(dateStr) {
-  const rows = await db.blocks
-    .where({ date: dateStr })
-    .filter(b => b.archived === 0)
-    .toArray()
-  return rows.map(blockFromDbRecord)
+  const end = _trackOp('getBlocksByDate')
+  try {
+    const rows = await db.blocks
+      .where({ date: dateStr })
+      .filter(b => b.archived === 0)
+      .toArray()
+    return rows.map(blockFromDbRecord)
+  } finally {
+    end()
+  }
 }
 
 export async function putBlock(block) {
-  const record = { ...block, updated_at: now() }
-  await db.blocks.put(record)
+  const end = _trackOp('putBlock')
+  try {
+    const record = { ...block, updated_at: now() }
+    await db.blocks.put(record)
+  } finally {
+    end()
+  }
 }
 
 export async function putBlocks(blocks) {
-  const timestamp = now()
-  const records = blocks.map(b => ({ ...b, updated_at: timestamp }))
-  await db.blocks.bulkPut(records)
+  const end = _trackOp('putBlocks')
+  try {
+    const timestamp = now()
+    const records = blocks.map(b => ({ ...b, updated_at: timestamp }))
+    await db.blocks.bulkPut(records)
+  } finally {
+    end()
+  }
 }
 
 export async function removeBlock(id) {
@@ -154,6 +243,35 @@ export async function checkHealth() {
     return { ok: false, error: err.message }
   } finally {
     clearTimeout(timer)
+  }
+}
+
+export async function getDbMetrics() {
+  _initMetrics()
+  await db.open()
+  const [blocksCount, syncQueueCount, settingsCount] = await Promise.all([
+    db.blocks.count(),
+    db.sync_queue.count(),
+    db.settings.count(),
+  ])
+  const connectedAt = _metrics.dbOpenedAt
+  const ops = Object.entries(_metrics.operations).map(([k, v]) => [
+    k,
+    {
+      count: v.length,
+      totalMs: +v.reduce((a, b) => a + b, 0).toFixed(2),
+    },
+  ])
+  return {
+    connectedAt,
+    connectedFor:
+      connectedAt != null && typeof performance !== 'undefined'
+        ? +(performance.now() - connectedAt).toFixed(2)
+        : null,
+    blocksCount,
+    syncQueueCount,
+    settingsCount,
+    operations: Object.fromEntries(ops),
   }
 }
 

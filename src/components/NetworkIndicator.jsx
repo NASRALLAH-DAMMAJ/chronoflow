@@ -1,5 +1,6 @@
 import React from 'react'
 import { useOffline } from '../hooks/useOffline'
+import { connectionMonitor } from '../lib/realtime'
 
 const dotBase = {
   width: 8,
@@ -11,10 +12,16 @@ const dotBase = {
 
 export default function NetworkIndicator() {
   const { isOffline, slow, justCameOnline } = useOffline()
+  const [realtimeStatus, setRealtimeStatus] = React.useState(connectionMonitor.getStatus())
   const [visible, setVisible] = React.useState(false)
 
   React.useEffect(() => {
     setVisible(true)
+  }, [])
+
+  React.useEffect(() => {
+    const unsub = connectionMonitor.onStatusChange(setRealtimeStatus)
+    return unsub
   }, [])
 
   if (!visible) return null
@@ -31,6 +38,12 @@ export default function NetworkIndicator() {
   } else if (slow) {
     color = '#f59e0b'
     title = 'Slow connection'
+  } else if (realtimeStatus === 'disconnected') {
+    color = '#ef4444'
+    title = 'Realtime disconnected'
+  } else if (realtimeStatus === 'reconnecting') {
+    color = '#f59e0b'
+    title = 'Reconnecting...'
   }
 
   return (

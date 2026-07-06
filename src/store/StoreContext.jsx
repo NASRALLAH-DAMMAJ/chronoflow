@@ -8,6 +8,7 @@ import { migrateLocalStorage } from '../lib/migrate'
 import { isAuthError } from '../lib/retry'
 import { taskQueue } from '../lib/taskQueue'
 import { seedBlocks, putBlocks, removeBlock, markBlockArchived, enqueueSyncAction, getBlocksByDate, blockToDbRecord } from '../lib/db'
+import { setupRealtimeSubscription, markLocalChange, realtimeBlockFromPayload } from '../lib/realtime'
 
 const StoreContext = createContext(null)
 
@@ -151,6 +152,24 @@ export function StoreProvider({ children }) {
   }, [user, supabase])
 
   useEffect(() => {
+    if (!user || !supabase) return
+    const handleRealtimeChange = (payload) => {
+      const { eventType, new: newRow, old: oldRow } = payload
+      if (eventType === 'INSERT' && newRow) {
+        const block = realtimeBlockFromPayload(newRow)
+        if (block) dispatch({ type: 'ADD_BLOCK', payload: block })
+      } else if (eventType === 'UPDATE' && newRow) {
+        const block = realtimeBlockFromPayload(newRow)
+        if (block) dispatch({ type: 'UPDATE_BLOCK', payload: block })
+      } else if (eventType === 'DELETE' && oldRow) {
+        dispatch({ type: 'DELETE_BLOCK', payload: { id: oldRow.id } })
+      }
+    }
+    const unsubscribe = setupRealtimeSubscription(supabase, user.id, handleRealtimeChange)
+    return () => unsubscribe()
+  }, [user, supabase])
+
+  useEffect(() => {
     if (!hasLoadedOnce.current || !user || !state.loaded) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
@@ -197,14 +216,17 @@ export function StoreProvider({ children }) {
   }, [supabase, user, flushSave])
 
   const addBlock = useCallback((block) => {
+    markLocalChange(block.id)
     dispatch({ type: 'ADD_BLOCK', payload: block })
   }, [])
 
   const updateBlock = useCallback((id, changes) => {
+    markLocalChange(id)
     dispatch({ type: 'UPDATE_BLOCK', payload: { id, ...changes } })
   }, [])
 
   const deleteBlockAction = useCallback((id) => {
+    markLocalChange(id)
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
     removeBlock(id).catch(() => {})
     taskQueue.add(
@@ -227,6 +249,7 @@ export function StoreProvider({ children }) {
   }, [supabase, bumpArchiveVersion])
 
   const archiveBlockAction = useCallback((id) => {
+    markLocalChange(id)
     dispatch({ type: 'DELETE_BLOCK', payload: { id } })
     markBlockArchived(id).catch(() => {})
     taskQueue.add(
@@ -242,6 +265,7 @@ export function StoreProvider({ children }) {
     const block = await fetchArchivedBlockById(supabase, user.id, id)
     if (!block) return
     const restored = { ...block, archived: false, date: stateRef.current.dateStr }
+    markLocalChange(id)
     dispatch({ type: 'ADD_BLOCK', payload: restored })
     taskQueue.add(
       async () => {
@@ -267,6 +291,7 @@ export function StoreProvider({ children }) {
       start: startMin,
       end,
     }
+    markLocalChange(id)
     dispatch({ type: 'ADD_BLOCK', payload: restored })
     taskQueue.add(
       async () => {
@@ -278,14 +303,17 @@ export function StoreProvider({ children }) {
   }, [supabase, user, bumpArchiveVersion])
 
   const moveBlock = useCallback((id, newStart) => {
+    markLocalChange(id)
     dispatch({ type: 'MOVE_BLOCK', payload: { id, newStart } })
   }, [])
 
   const resizeBlock = useCallback((id, newEnd) => {
+    markLocalChange(id)
     dispatch({ type: 'RESIZE_BLOCK', payload: { id, newEnd } })
   }, [])
 
   const resizeBlockStart = useCallback((id, newStart) => {
+    markLocalChange(id)
     dispatch({ type: 'RESIZE_BLOCK_START', payload: { id, newStart } })
   }, [])
 
@@ -294,6 +322,7 @@ export function StoreProvider({ children }) {
   }, [])
 
   const toggleLock = useCallback((id) => {
+    markLocalChange(id)
     dispatch({ type: 'TOGGLE_LOCK', payload: { id } })
   }, [])
 
