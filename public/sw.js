@@ -9,7 +9,7 @@ workbox.setConfig({
   modulePathPrefix: '/workbox/',
 })
 
-const CACHE_NAME = 'chronoflow-v1'
+const CACHE_NAME = 'chronoflow-v2'
 workbox.core.setCacheNameDetails({
   prefix: 'chronoflow',
   suffix: 'v1',
@@ -27,7 +27,7 @@ const {
 const { CacheableResponsePlugin } = workbox.cacheableResponse
 const { ExpirationPlugin } = workbox.expiration
 
-const staticHandler = new CacheFirst({
+const staticHandler = new StaleWhileRevalidate({
   cacheName: CACHE_NAME,
   plugins: [
     new CacheableResponsePlugin({ statuses: [0, 200] }),
@@ -92,4 +92,17 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting()
   }
+})
+
+// Clean up old caches on activation
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name.startsWith('chronoflow') && name !== CACHE_NAME && name !== 'chronoflow-v2-images' && name !== 'chronoflow-v2-api')
+          .map((name) => caches.delete(name))
+      )
+    })
+  )
 })
