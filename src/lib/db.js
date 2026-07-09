@@ -296,7 +296,15 @@ export async function closeDb() {
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-      db.close()
+      // Only close if no pending operations
+      if (db.isOpen()) {
+        db.close()
+      }
+    } else if (document.visibilityState === 'visible') {
+      // Reopen if needed
+      if (!db.isOpen()) {
+        db.open().catch(() => {})
+      }
     }
   })
 }

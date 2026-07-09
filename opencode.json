@@ -7,5 +7,20 @@
       "enabled": true,
       "env": {}
     }
-  }
+  },
+  "provider": {
+    "Qwen": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Qwen (DashScope Intl)",
+      "options": {
+        "baseURL": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+      },
+      "models": {
+        "qwen3.7-plus": {
+          "name": "Qwen3.7 plus"
+        }
+      }
+    }
+  },
+  "model": "qwen/qwen3.7-plus"
 }

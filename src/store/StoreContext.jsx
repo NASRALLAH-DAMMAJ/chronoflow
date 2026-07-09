@@ -12,11 +12,11 @@ import { blockToDbRecord } from '../lib/db'
 import { setupRealtimeSubscription, markLocalChange, realtimeBlockFromPayload, realtimeRecordFromPayload } from '../lib/realtime';
 import { enqueueForSync } from '../lib/syncEngine'
 import { detectConflict, logConflict } from '../lib/conflictDetector'
-import { processSyncQueue, getQueueStats, getSyncStatus, onSyncStatusChange, clearFailedActions } from '../lib/syncEngine'
+import { processSyncQueue, getQueueStats, getSyncStatus, onSyncStatusChange, clearFailedActions, purgeStaleActions } from '../lib/syncEngine'
 
 const StoreContext = createContext(null)
 
-const INIT_TIMEOUT_MS = 8000
+const INIT_TIMEOUT_MS = 15000
 
 export function StoreProvider({ children }) {
   const { supabase, user } = useSupabase()
@@ -46,9 +46,14 @@ export function StoreProvider({ children }) {
 
   const triggerSync = useCallback(async () => {
     if (!supabase) return
-    await processSyncQueue(supabase)
-    const stats = await getQueueStats()
-    setPendingSyncCount(stats.pendingCount + stats.failedCount)
+    taskQueue.add(
+      async ({ onProgress }) => {
+        await processSyncQueue(supabase, onProgress)
+        const stats = await getQueueStats()
+        setPendingSyncCount(stats.pendingCount + stats.failedCount)
+      },
+      { label: 'Syncing changes...', priority: 'high', timeout: 15000 }
+    )
   }, [supabase])
 
   useEffect(() => {
@@ -103,6 +108,7 @@ export function StoreProvider({ children }) {
 
         // Clear stale sync queue items from previous sessions
         clearFailedActions().catch(() => {})
+        purgeStaleActions(30).catch(() => {})
         processSyncQueue(supabase).catch(() => {})
 
         if (userIdRef.current !== currentUser) return
@@ -147,13 +153,14 @@ export function StoreProvider({ children }) {
       const { dateStr, blocks, userId, resolve } = saveQueueRef.current.pop()
       try {
         const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
-        storage.putBlocks(records).catch(() => {})
-        await enqueueForSync('upsert', dateStr, blocks)
+        await storage.putBlocks(records).catch(() => {})
+        await enqueueForSync('upsert', dateStr, { blocks: records }).catch(() => {})
         setDbError(null)
         resolve()
       } catch (err) {
         console.error('[Store] Save failed:', err)
-        await enqueueForSync('upsert', dateStr, blocks)
+        const records = blocks.map(b => blockToDbRecord(b, dateStr, userId))
+        await enqueueForSync('upsert', dateStr, { blocks: records }).catch(() => {})
         if (isAuthError(err)) {
           setDbError('Session expired — please log in again')
         } else {

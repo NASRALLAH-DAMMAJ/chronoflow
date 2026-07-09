@@ -77,7 +77,7 @@ export function setupRealtimeSubscription(supabase, userId, onBlockChange) {
         reconnectAttempts = 0
         mon.status = 'connected'
         mon.recordPong()
-        console.log("[Realtime] Change received:", payload)
+        console.log('[Realtime] Channel subscribed')
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         mon.status = 'reconnecting'
         scheduleReconnect()

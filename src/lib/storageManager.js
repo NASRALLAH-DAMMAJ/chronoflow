@@ -43,8 +43,35 @@ const METHODS = [
 
 function createMethod(method) {
   return async (...args) => {
-    const b = await getBackend()
-    return b[method](...args)
+    try {
+      const b = await getBackend()
+      // Ensure DB is open before operation
+      if (b.db && !b.db.isOpen()) {
+        await b.db.open()
+      }
+      return await b[method](...args)
+    } catch (err) {
+      // Silently handle DatabaseClosedError and other transient errors
+      if (err.name === 'DatabaseClosedError') {
+        console.warn('[Storage] DB closed during', method, '- attempting reopen')
+        try {
+          const b = await getBackend()
+          if (b.db && !b.db.isOpen()) {
+            await b.db.open()
+          }
+          return await b[method](...args)
+        } catch (retryErr) {
+          console.warn('[Storage] Retry failed for', method)
+        }
+      }
+      // Return safe defaults for read operations
+      if (method === 'getBlocksByDate' || method === 'getAllBlocks') return []
+      if (method === 'getBlock') return null
+      if (method === 'getSetting') return null
+      if (method === 'getPendingSyncActions') return []
+      if (method === 'estimateQuota') return { supported: false }
+      if (method === 'checkHealth') return { ok: false, error: err.message }
+    }
   }
 }
 

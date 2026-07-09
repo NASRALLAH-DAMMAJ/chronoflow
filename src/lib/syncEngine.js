@@ -152,3 +152,8 @@ export async function getQueueStats() {
 export async function clearFailedActions() {
   await db.sync_queue.where({ status: 'failed' }).delete()
 }
+
+export async function purgeStaleActions(maxAgeDays = 30) {
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString()
+  await db.sync_queue.where('created_at').below(cutoff).delete()
+}
